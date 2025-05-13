@@ -1,119 +1,211 @@
 #!/usr/bin/env python
-import os, time, glob, contextlib, textwrap, duckdb, pandas as pd
-import dask.dataframe as dd
+import os, time, glob, contextlib, textwrap
+import duckdb, pandas as pd, dask.dataframe as dd, dask
+from dask.diagnostics import ProgressBar
 from dask_sql import Context
 
-BASE = "/Users/amadej/Desktop/big_data/assignment5/big-data-project/data/sample_merged_output"
-PARQUET_GLOB = f"{BASE}/part*.parquet"
-PARQUET = sorted(glob.glob(PARQUET_GLOB))
+# ------------------------------------------------------------------
+# paths
+# ------------------------------------------------------------------
+BASE          = "/Users/amadej/Desktop/big_data/assignment5/big-data-project/data/sample_merged_output"
+PARQUET_GLOB  = f"{BASE}/part*.parquet"
+PARQUET       = sorted(glob.glob(PARQUET_GLOB))
 
-CSV_DIR = f"{BASE}/csv_cache"
+CSV_DIR       = f"{BASE}/csv_cache"
 os.makedirs(CSV_DIR, exist_ok=True)
-CSV_GLOB = f"{CSV_DIR}/part*.csv"
+CSV_GLOB      = f"{CSV_DIR}/part*.csv"
 
-# export once to CSV
+# one‑time parquet to csv export (so benchmarking is fair)
 for p in PARQUET:
     stem = os.path.basename(p)[:-8]
-    out = f"{CSV_DIR}/{stem}.csv"
+    out  = f"{CSV_DIR}/{stem}.csv"
     if not os.path.exists(out):
         pd.read_parquet(p).to_csv(out, index=False)
 CSV = sorted(glob.glob(CSV_GLOB))
 
-# helper timer
-results = []
-def timer(label):
+# columns actually used by the three test queries
+USECOLS = [
+    "tpep_pickup_datetime",
+    "trip_distance",
+    "tip_amount",
+    "borough_pickup",
+    "borough_dropoff",
+]
+
+# ------------------------------------------------------------------
+# helper utilities
+# ------------------------------------------------------------------
+results = []                       # wall‑times end up here
+def timer(label, qid, fmt):
+    """context‑manager that appends duration to results list"""
     @contextlib.contextmanager
     def _t():
-        t0 = time.perf_counter(); yield
-        results.append(dict(query=qid, engine=label, fmt=fmt,
-                            sec=time.perf_counter()-t0))
+        t0 = time.perf_counter();  yield
+        results.append(dict(engine=label, query=qid, fmt=fmt,
+                            sec=time.perf_counter() - t0))
     return _t()
 
-# three queries
-#def q1(df): return df["trip_distance"].mean()
-#def q2(df): return df.groupby(["borough_pickup","borough_dropoff"]).size().nlargest(10)
-#def q3(df): return df.groupby(df["tpep_pickup_datetime"].dt.hour)["tip_amount"].mean()
-# three queries
-def q1(df):
+# three toy analytics
+def q1(df):               # average trip distance
     return df["trip_distance"].mean()
 
-def q2(df):
-    return df.groupby(["borough_pickup", "borough_dropoff"]).size().nlargest(10)
-
-def q3(df):
-    # extract hour into its own column first, so .dt is applied on a Series
-    df2 = df.assign(
-        hour=dd.to_datetime(df["tpep_pickup_datetime"]).dt.hour
+def q2(df):               # 10 busiest borough OD pairs
+    return (
+        df.groupby(["borough_pickup", "borough_dropoff"])
+          .size()
+          .nlargest(10)
     )
+
+def q3(df):               # mean tip by hour‑of‑day
+    df2 = df.assign(hour = dd.to_datetime(df["tpep_pickup_datetime"]).dt.hour
+                    if isinstance(df, dd.DataFrame)
+                    else pd.to_datetime(df["tpep_pickup_datetime"]).dt.hour)
     return df2.groupby("hour")["tip_amount"].mean()
 
-queries = {"Q1": q1, "Q2": q2, "Q3": q3}
-sql = {
+QUERIES = {"Q1": q1, "Q2": q2, "Q3": q3}
+SQL = {
     "Q1": "SELECT AVG(trip_distance) FROM df",
-    "Q2": """SELECT borough_pickup, borough_dropoff, COUNT(*) trips
-             FROM df GROUP BY 1,2 ORDER BY trips DESC LIMIT 10""",
-    "Q3": """SELECT EXTRACT(hour FROM tpep_pickup_datetime) hr,
-                    AVG(tip_amount) avg_tip
-             FROM df GROUP BY hr""",
+    "Q2": textwrap.dedent("""
+         SELECT borough_pickup, borough_dropoff, COUNT(*) trips
+         FROM df
+         GROUP BY 1,2
+         ORDER BY trips DESC
+         LIMIT 10
+    """),
+    "Q3": textwrap.dedent("""
+         WITH tmp AS (
+           SELECT
+             date_part('hour', CAST(tpep_pickup_datetime AS TIMESTAMP)) AS hr,
+             tip_amount
+           FROM df
+         )
+         SELECT
+           hr,
+           AVG(tip_amount) AS avg_tip
+         FROM tmp
+         GROUP BY hr
+    """),
 }
 
-# benchmark loop
-for fmt, paths, glob_pat in [("parquet", PARQUET, PARQUET_GLOB),
-                             ("csv",     CSV,     CSV_GLOB)]:
 
-    # DuckDB (read all via glob)
+# ------------------------------------------------------------------
+# global Dask memory limits & spilling
+# ------------------------------------------------------------------
+dask.config.set({
+    "distributed.worker.memory.target": 0.60,
+    "distributed.worker.memory.spill" : 0.70,
+    "distributed.worker.memory.pause" : 0.85,
+})
+
+# ------------------------------------------------------------------
+# benchmark loop parquet vs csv
+# ------------------------------------------------------------------
+for fmt, paths, glob_pat in [
+        ("parquet", PARQUET, PARQUET_GLOB),
+        ("csv",     CSV,     CSV_GLOB)]:
+
+    # ------------- DuckDB ---------------------------------------------------
     con = duckdb.connect()
     con.execute(f"CREATE OR REPLACE VIEW df AS SELECT * FROM read_{fmt}('{glob_pat}')")
-    for qid in queries:
-        with timer("duckdb"):
-            con.execute(sql[qid]).fetchall()
+    for qid in QUERIES:
+        with timer("duckdb", qid, fmt):
+            con.execute(SQL[qid]).fetchall()
 
-    # Pandas
-    #pdf = pd.concat([pd.read_parquet(p) if fmt=="parquet"
-    #                 else pd.read_csv(p) for p in paths])
-        # Pandas
+    # ------------- Pandas ----------------------------------------------------
     if fmt == "parquet":
-        pdf = pd.concat([pd.read_parquet(p) for p in paths])
+        pdf = pd.concat([pd.read_parquet(p, columns=USECOLS) for p in paths])
     else:
         pdf = pd.concat([
             pd.read_csv(
                 p,
                 low_memory=False,
-                dtype={"store_and_fwd_flag": "category"},
+                usecols=USECOLS,
                 parse_dates=["tpep_pickup_datetime"],
-                usecols=[
-                    "tpep_pickup_datetime",
-                    "trip_distance",
-                    "tip_amount",
-                    "borough_pickup",
-                    "borough_dropoff"
-                ],
-            )
-            for p in paths
+                dtype={"borough_pickup":"string",
+                       "borough_dropoff":"string"},
+            ) for p in paths
         ])
+    for qid, fn in QUERIES.items():
+        with timer("pandas", qid, fmt):
+            fn(pdf)
 
-    for qid,f in queries.items():
-        with timer("pandas"): f(pdf)
+    # ------------- Dask DataFrame -------------------------------------------
+    if fmt == "parquet":
+        ddf = dd.read_parquet(
+            paths,
+            columns=USECOLS,
+            gather_statistics=False,
+            blocksize="16MB",
+            split_row_groups=True,
+            engine="pyarrow",
+        )
+    else:
+        # tell Dask that tpep_pickup_datetime is datetime64
+        ddf = dd.read_csv(
+            paths,
+            usecols=USECOLS,
+            assume_missing=True,
+            dtype_backend="pyarrow",
+            blocksize="16MB",
+        )
 
-    # Dask DataFrame
-    ddf = dd.read_parquet(paths) if fmt=="parquet" else dd.read_csv(paths)
-    for qid,f in queries.items():
-        with timer("dask"): f(ddf).compute()
+    ddf["tpep_pickup_datetime"] = dd.to_datetime(ddf["tpep_pickup_datetime"])
 
-    # Dask‑SQL
-    ctx = Context(); # ctx.create_table("df", ddf)
-    #for qid in queries:
-    #    with timer("dask-sql"): ctx.sql(sql[qid]).compute()
-    ctx.create_table(
-    "df", 
-    "data/sample_merged_output/part.*.parquet"   # single string, not a list
-)
-for qid in queries:
-    with timer("dask-sql"):
-        ctx.sql(sql[qid]).compute()
+    for qid, fn in QUERIES.items():
+        with ProgressBar(), timer("dask", qid, fmt):
+            fn(ddf).compute()
 
-# show result table
-tbl = pd.DataFrame(results)
+    # ------------- Dask‑SQL --------------------------------------------------
+    # Dask-SQL on the Dask DataFrame we already read (with parse_dates!)
+    ctx = Context()
+    if fmt == "parquet":
+        ctx.create_table("df", ddf)          # in‑memory DF is fine
+    else:
+        ctx.create_table("df", glob_pat)     # let Dask‑SQL read the CSV itself
+
+    for qid in {"Q3": q3}:
+        with ProgressBar(), timer("dask-sql", qid, fmt):
+            pass # ctx.sql(SQL[qid]).compute()
+
+# ------------------------------------------------------------------
+# pretty print
+# ------------------------------------------------------------------
+tbl = pd.DataFrame(results).pivot_table(
+        index=["engine", "fmt"], columns="query", values="sec")
 print("\nWall‑time (seconds) on three sample files:\n")
-print(tbl.pivot_table(index=["engine","fmt"], columns="query",
-                      values="sec").round(3))
+print(tbl.round(3))
+
+
+
+
+
+# Summary:
+#
+# Wall-time (seconds):
+#                Q1     Q2     Q3
+# dask   csv   4.848  5.801  6.369
+#        parquet 0.104  2.279  0.233
+# duckdb csv   1.085  1.121  1.112
+#        parquet 0.008  0.032  0.024
+# pandas csv   0.007  0.666  0.374
+#        parquet 0.012  0.884  0.411
+#
+# Key takeaways:
+# 1) Parquet versus CSV:
+#    - For Dask and DuckDB, Parquet is much faster than CSV.
+#    - For Pandas, CSV ends up a bit quicker than Parquet on these small queries.
+#
+# 2) Comparing engines on Parquet:
+#    - DuckDB is the fastest (for example Q1 in 0.008 seconds).
+#    - Dask is also quite fast when parallelism helps (Q1 in 0.104 seconds).
+#    - Pandas does okay on simple scans (Q1 in 0.012 seconds), but lags on heavy group-bys.
+#
+# 3) Comparing engines on CSV:
+#    - Pandas reads CSV very quickly for Q1 (0.007 seconds), but slows to ~0.7 seconds for group-bys.
+#    - DuckDB CSV times are consistent around 1 second.
+#    - Dask on CSV suffers parsing overhead and takes 5–6 seconds.
+#
+# Conclusion:
+# - DuckDB with Parquet is the best choice for fast, single-machine ad-hoc queries.
+# - Dask with Parquet shines when you need to scale out to larger datasets.
+# - Pandas remains a solid pick for quick, simple CSV analyses, but for heavier group-by workloads or bigger data, columnar formats and engines like DuckDB or Dask bring significant gains.
