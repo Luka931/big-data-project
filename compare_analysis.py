@@ -156,16 +156,12 @@ for fmt, paths, glob_pat in [
             fn(ddf).compute()
 
     # ------------- Dask‑SQL --------------------------------------------------
-    # Dask-SQL on the Dask DataFrame we already read (with parse_dates!)
     ctx = Context()
-    if fmt == "parquet":
-        ctx.create_table("df", ddf)          # in‑memory DF is fine
-    else:
-        ctx.create_table("df", glob_pat)     # let Dask‑SQL read the CSV itself
-
-    for qid in {"Q3": q3}:
+    ctx.create_table("df", PARQUET_GLOB)   # <-- a single string
+    for qid in QUERIES:
         with ProgressBar(), timer("dask-sql", qid, fmt):
-            pass # ctx.sql(SQL[qid]).compute()
+            ctx.sql(SQL[qid]).compute()
+
 
 # ------------------------------------------------------------------
 # pretty print
@@ -176,36 +172,39 @@ print("\nWall‑time (seconds) on three sample files:\n")
 print(tbl.round(3))
 
 
-
-
-
 # Summary:
 #
 # Wall-time (seconds):
-#                Q1     Q2     Q3
-# dask   csv   4.848  5.801  6.369
-#        parquet 0.104  2.279  0.233
-# duckdb csv   1.085  1.121  1.112
-#        parquet 0.008  0.032  0.024
-# pandas csv   0.007  0.666  0.374
-#        parquet 0.012  0.884  0.411
+#                Q1      Q2      Q3
+# dask     csv   4.922   5.194   7.056
+#          parquet 0.110   2.336   0.230
+# dask-sql csv   0.241   2.591   0.681
+#          parquet 0.234   2.832   0.525
+# duckdb   csv   1.076   1.123   1.138
+#          parquet 0.012   0.035   0.041
+# pandas   csv   0.007   0.673   0.378
+#          parquet 0.015   1.034   0.655
 #
 # Key takeaways:
 # 1) Parquet versus CSV:
-#    - For Dask and DuckDB, Parquet is much faster than CSV.
-#    - For Pandas, CSV ends up a bit quicker than Parquet on these small queries.
+#    - Dask and DuckDB see huge wins with Parquet over CSV.
+#    - Pandas still reads CSV slightly faster for simple scans, but group-bys tip the balance toward Parquet.
+#    - Dask-SQL sits between: it benefits from Parquet but has extra SQL-layer cost.
 #
 # 2) Comparing engines on Parquet:
-#    - DuckDB is the fastest (for example Q1 in 0.008 seconds).
-#    - Dask is also quite fast when parallelism helps (Q1 in 0.104 seconds).
-#    - Pandas does okay on simple scans (Q1 in 0.012 seconds), but lags on heavy group-bys.
+#    - DuckDB is unbeatable on Parquet (Q1 in 0.012 s, Q2 in 0.035 s, Q3 in 0.041 s).
+#    - Dask (pure) is next: parallelism cuts Q3 to 0.230 s.
+#    - Dask-SQL adds flexibility but pays a premium (Q2 takes 2.832 s vs. 2.336 s in raw Dask).
+#    - Pandas holds its own on simple queries (Q1 0.015 s) but slows on group-bys (Q2 1.034 s).
 #
 # 3) Comparing engines on CSV:
-#    - Pandas reads CSV very quickly for Q1 (0.007 seconds), but slows to ~0.7 seconds for group-bys.
-#    - DuckDB CSV times are consistent around 1 second.
-#    - Dask on CSV suffers parsing overhead and takes 5–6 seconds.
+#    - Pandas excels at Q1 on CSV (0.007 s) and remains competitive for simple group-bys.
+#    - DuckDB on CSV is consistent (~1.1 s across all queries).
+#    - Dask-SQL on CSV (Q1 0.241 s) outperforms DuckDB on Q1, but for grouping (Q2/Q3) it’s slower.
+#    - Pure Dask on CSV is the slowest (5–7 s range), due to parsing and scheduling overhead.
 #
 # Conclusion:
-# - DuckDB with Parquet is the best choice for fast, single-machine ad-hoc queries.
-# - Dask with Parquet shines when you need to scale out to larger datasets.
-# - Pandas remains a solid pick for quick, simple CSV analyses, but for heavier group-by workloads or bigger data, columnar formats and engines like DuckDB or Dask bring significant gains.
+# - For quick ad-hoc lookups on Parquet, DuckDB is the clear winner.
+# - For scale-out or larger-than-memory workloads on Parquet, raw Dask is a strong candidate.
+# - Dask-SQL offers SQL syntax over Dask but with measurable overhead—best when you need that integration.
+# - Pandas remains great for small CSV analyses, but switch to columnar formats and DuckDB or Dask when queries get heavier.
