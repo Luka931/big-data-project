@@ -8,7 +8,7 @@ def download_data_set(api_data):
     url_download = api_data.get("url")
     end = api_data.get("end")
     start = api_data.get("start") 
-    save_location = api_data.get("save_folder") + "/{}-{:02}.parquet"
+    save_location = "trip_record_data" + api_data.get("save_folder") + "/{}-{:02}.parquet"
 
     make_directory(api_data.get("save_folder"))
 
@@ -21,7 +21,7 @@ def download_data_set(api_data):
 
 YELLOW_TAXI_API = {
     "url" : "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{}-{:02}.parquet",
-    "save_folder": "taxi-data",
+    "save_folder": "yellow-taxi",
     "start" : 2012,
     "end" : 2025
 }
@@ -43,7 +43,7 @@ FOR_HIRE_API = {
 HIGH_VOLUME_API = {
     "url" : "https://d37ci6vzurychx.cloudfront.net/trip-data/fhvhv_tripdata_{}-{:02}.parquet",
     "save_folder" : "high_volume",
-    "start" : 2019,
+    "start" : 2021,
     "end" : 2025
 }
 
@@ -65,10 +65,6 @@ if __name__ == "__main__":
 
         if recieved_input in API_DATA:
             download_data_set(API_DATA[recieved_input])
-        elif recieved_input.lower() == "all":
-            for value in tqdm.tqdm(API_DATA.values()):
-                download_data_set(value)
-            break
         else:
             break
 
