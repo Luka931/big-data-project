@@ -26,3 +26,13 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  app:
+    build: .              # looks for ./Dockerfile
+    depends_on:
+      - kafka
+    volumes:
+      - .:/app            # live-reload your code
+    ports:
+      - "8888:8888"       # JupyterLab
+    command: jupyter lab --ip=0.0.0.0 --no-browser --allow-root

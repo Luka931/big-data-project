@@ -3,11 +3,29 @@ import math
 import pandas as pd
 from datetime import timedelta
 
+import numpy as np
+from sklearn.cluster import MiniBatchKMeans
+
+
 
 BOOTSTRAP_SERVERS = 'localhost:9092'
 YELLOW_TAXI_TOPIC = 'yellow-taxi'
 WINDOW_SIZE_SECONDS = 300  
 WINDOW_EXPIRES_SECONDS = 360
+
+# ------------- STREAM-CLUSTERING CONFIG ----------------
+N_CLUSTERS   = 8
+BATCH_SIZE   = 2_000      # flush & fit every N rides
+
+cluster_model  = MiniBatchKMeans(
+        n_clusters=N_CLUSTERS,
+        batch_size=BATCH_SIZE,
+        random_state=42)
+
+feature_buffer = []        # in-memory buffer per worker
+
+clusters_topic = app.topic('kmeans_centroids', value_type=dict)
+# --------------------------------------------------------
 
 LOCATION_TO_BOROUGH = pd.read_csv('location_to_borough.csv').set_index('LocationID')['Borough'].to_dict()
 
@@ -126,6 +144,25 @@ async def process_taxi_ride(stream):
             current_location_stats.passenger_sum += ride.passenger_count
             current_location_stats.passenger_sq_sum += ride.passenger_count ** 2
             location_stats_table[location_id] = current_location_stats
+        
+        # ---------- STREAM-CLUSTERING (MiniBatch k-means) ----------
+        feature_buffer.append([
+            ride.distance,
+            ride.base_fare,
+            ride.passenger_count
+        ])
+
+        if len(feature_buffer) >= BATCH_SIZE:
+            X = np.asarray(feature_buffer, dtype=float)
+            cluster_model.partial_fit(X)
+            feature_buffer.clear()
+
+            await clusters_topic.send(value={
+                "timestamp": ride.pickup_datetime,
+                "centroids": cluster_model.cluster_centers_.tolist()
+            })
+        # -----------------------------------------------------------
+
 
 
 @app.timer(interval=30.0)  
