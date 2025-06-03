@@ -25,6 +25,10 @@ cluster_model  = MiniBatchKMeans(
 feature_buffer = []        # in-memory buffer per worker
 
 clusters_topic = app.topic('kmeans_centroids', value_type=dict)
+
+
+# Define a second topic for rolling-window stats
+rolling_stats_topic = app.topic('rolling_stats', value_type=dict)
 # --------------------------------------------------------
 
 LOCATION_TO_BOROUGH = pd.read_csv('location_to_borough.csv').set_index('LocationID')['Borough'].to_dict()
@@ -179,6 +183,20 @@ async def print_stats():
         if stats.count > 0:
             print(calculate_and_format_stats(stats, f"Borough: {borough}"))
 
+    if stats.count > 0:
+            await rolling_stats_topic.send(value={
+                "timestamp": datetime.utcnow().isoformat(),
+                "entity_type": "borough",
+                "entity_name": borough,
+                "count": stats.count,
+                "mean_distance": stats.distance_sum / stats.count,
+                "std_distance": math.sqrt(max(0, (stats.distance_sq_sum / stats.count) - ((stats.distance_sum / stats.count) ** 2))),
+                "mean_fare": stats.fare_sum / stats.count,
+                "std_fare": math.sqrt(max(0, (stats.fare_sq_sum / stats.count) - ((stats.fare_sum / stats.count) ** 2))),
+                "mean_passengers": stats.passenger_sum / stats.count,
+                "std_passengers": math.sqrt(max(0, (stats.passenger_sq_sum / stats.count) - ((stats.passenger_sum / stats.count) ** 2))),
+            })
+
     print("\n## Chosen Location Statistics ##")
     for loc_id in CHOSEN_LOCATIONS:
         stats = location_stats_table[loc_id].now()
@@ -186,6 +204,20 @@ async def print_stats():
             print(calculate_and_format_stats(stats, f"Location ID: {loc_id}"))
 
     print("=" * 40 + "\n")
+
+    if stats.count > 0:
+            await rolling_stats_topic.send(value={
+                "timestamp": datetime.utcnow().isoformat(),
+                "entity_type": "location",
+                "entity_id": loc_id,
+                "count": stats.count,
+                "mean_distance": stats.distance_sum / stats.count,
+                "std_distance": math.sqrt(max(0, (stats.distance_sq_sum / stats.count) - ((stats.distance_sum / stats.count) ** 2))),
+                "mean_fare": stats.fare_sum / stats.count,
+                "std_fare": math.sqrt(max(0, (stats.fare_sq_sum / stats.count) - ((stats.fare_sum / stats.count) ** 2))),
+                "mean_passengers": stats.passenger_sum / stats.count,
+                "std_passengers": math.sqrt(max(0, (stats.passenger_sq_sum / stats.count) - ((stats.passenger_sum / stats.count) ** 2))),
+            })
 
 
 if __name__ == '__main__':
