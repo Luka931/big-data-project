@@ -1,5 +1,6 @@
 import duckdb
 
+
 def main():
     yellow_taxi_data_path = "data/trip_record_data_filtered/yellow_taxi/*.parquet"
     high_volume_data_path = "data/trip_record_data_filtered/high_volume/*.parquet"
@@ -31,7 +32,9 @@ def main():
         where t.year == 2021
     """
 
-    con.sql(f"create table combinded_data as {high_volume_sql} union all by name {yellow_taxi_sql} order by pickup_datetime")
+    con.sql(
+        f"create table combinded_data as {high_volume_sql} union all by name {yellow_taxi_sql} order by pickup_datetime"
+    )
 
 
 if __name__ == "__main__":

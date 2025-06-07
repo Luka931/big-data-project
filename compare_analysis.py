@@ -7,18 +7,18 @@ from dask_sql import Context
 # ------------------------------------------------------------------
 # paths
 # ------------------------------------------------------------------
-BASE          = "/Users/amadej/Desktop/big_data/assignment5/big-data-project/data/sample_merged_output"
-PARQUET_GLOB  = f"{BASE}/part*.parquet"
-PARQUET       = sorted(glob.glob(PARQUET_GLOB))
+BASE = "/Users/amadej/Desktop/big_data/assignment5/big-data-project/data/sample_merged_output"
+PARQUET_GLOB = f"{BASE}/part*.parquet"
+PARQUET = sorted(glob.glob(PARQUET_GLOB))
 
-CSV_DIR       = f"{BASE}/csv_cache"
+CSV_DIR = f"{BASE}/csv_cache"
 os.makedirs(CSV_DIR, exist_ok=True)
-CSV_GLOB      = f"{CSV_DIR}/part*.csv"
+CSV_GLOB = f"{CSV_DIR}/part*.csv"
 
 # one‑time parquet to csv export (so benchmarking is fair)
 for p in PARQUET:
     stem = os.path.basename(p)[:-8]
-    out  = f"{CSV_DIR}/{stem}.csv"
+    out = f"{CSV_DIR}/{stem}.csv"
     if not os.path.exists(out):
         pd.read_parquet(p).to_csv(out, index=False)
 CSV = sorted(glob.glob(CSV_GLOB))
@@ -35,44 +35,57 @@ USECOLS = [
 # ------------------------------------------------------------------
 # helper utilities
 # ------------------------------------------------------------------
-results = []                       # wall‑times end up here
+results = []  # wall‑times end up here
+
+
 def timer(label, qid, fmt):
     """context‑manager that appends duration to results list"""
+
     @contextlib.contextmanager
     def _t():
-        t0 = time.perf_counter();  yield
-        results.append(dict(engine=label, query=qid, fmt=fmt,
-                            sec=time.perf_counter() - t0))
+        t0 = time.perf_counter()
+        yield
+        results.append(
+            dict(engine=label, query=qid, fmt=fmt, sec=time.perf_counter() - t0)
+        )
+
     return _t()
 
+
 # three toy analytics
-def q1(df):               # average trip distance
+def q1(df):  # average trip distance
     return df["trip_distance"].mean()
 
-def q2(df):               # 10 busiest borough OD pairs
-    return (
-        df.groupby(["borough_pickup", "borough_dropoff"])
-          .size()
-          .nlargest(10)
-    )
 
-def q3(df):               # mean tip by hour‑of‑day
-    df2 = df.assign(hour = dd.to_datetime(df["tpep_pickup_datetime"]).dt.hour
-                    if isinstance(df, dd.DataFrame)
-                    else pd.to_datetime(df["tpep_pickup_datetime"]).dt.hour)
+def q2(df):  # 10 busiest borough OD pairs
+    return df.groupby(["borough_pickup", "borough_dropoff"]).size().nlargest(10)
+
+
+def q3(df):  # mean tip by hour‑of‑day
+    df2 = df.assign(
+        hour=(
+            dd.to_datetime(df["tpep_pickup_datetime"]).dt.hour
+            if isinstance(df, dd.DataFrame)
+            else pd.to_datetime(df["tpep_pickup_datetime"]).dt.hour
+        )
+    )
     return df2.groupby("hour")["tip_amount"].mean()
+
 
 QUERIES = {"Q1": q1, "Q2": q2, "Q3": q3}
 SQL = {
     "Q1": "SELECT AVG(trip_distance) FROM df",
-    "Q2": textwrap.dedent("""
+    "Q2": textwrap.dedent(
+        """
          SELECT borough_pickup, borough_dropoff, COUNT(*) trips
          FROM df
          GROUP BY 1,2
          ORDER BY trips DESC
          LIMIT 10
-    """),
-    "Q3": textwrap.dedent("""
+    """
+    ),
+    "Q3": textwrap.dedent(
+        """
          WITH tmp AS (
            SELECT
              date_part('hour', CAST(tpep_pickup_datetime AS TIMESTAMP)) AS hr,
@@ -84,25 +97,29 @@ SQL = {
            AVG(tip_amount) AS avg_tip
          FROM tmp
          GROUP BY hr
-    """),
+    """
+    ),
 }
 
 
 # ------------------------------------------------------------------
 # global Dask memory limits & spilling
 # ------------------------------------------------------------------
-dask.config.set({
-    "distributed.worker.memory.target": 0.60,
-    "distributed.worker.memory.spill" : 0.70,
-    "distributed.worker.memory.pause" : 0.85,
-})
+dask.config.set(
+    {
+        "distributed.worker.memory.target": 0.60,
+        "distributed.worker.memory.spill": 0.70,
+        "distributed.worker.memory.pause": 0.85,
+    }
+)
 
 # ------------------------------------------------------------------
 # benchmark loop parquet vs csv
 # ------------------------------------------------------------------
 for fmt, paths, glob_pat in [
-        ("parquet", PARQUET, PARQUET_GLOB),
-        ("csv",     CSV,     CSV_GLOB)]:
+    ("parquet", PARQUET, PARQUET_GLOB),
+    ("csv", CSV, CSV_GLOB),
+]:
 
     # ------------- DuckDB ---------------------------------------------------
     con = duckdb.connect()
@@ -115,16 +132,18 @@ for fmt, paths, glob_pat in [
     if fmt == "parquet":
         pdf = pd.concat([pd.read_parquet(p, columns=USECOLS) for p in paths])
     else:
-        pdf = pd.concat([
-            pd.read_csv(
-                p,
-                low_memory=False,
-                usecols=USECOLS,
-                parse_dates=["tpep_pickup_datetime"],
-                dtype={"borough_pickup":"string",
-                       "borough_dropoff":"string"},
-            ) for p in paths
-        ])
+        pdf = pd.concat(
+            [
+                pd.read_csv(
+                    p,
+                    low_memory=False,
+                    usecols=USECOLS,
+                    parse_dates=["tpep_pickup_datetime"],
+                    dtype={"borough_pickup": "string", "borough_dropoff": "string"},
+                )
+                for p in paths
+            ]
+        )
     for qid, fn in QUERIES.items():
         with timer("pandas", qid, fmt):
             fn(pdf)
@@ -157,7 +176,7 @@ for fmt, paths, glob_pat in [
 
     # ------------- Dask‑SQL --------------------------------------------------
     ctx = Context()
-    ctx.create_table("df", PARQUET_GLOB)   # <-- a single string
+    ctx.create_table("df", PARQUET_GLOB)  # <-- a single string
     for qid in QUERIES:
         with ProgressBar(), timer("dask-sql", qid, fmt):
             ctx.sql(SQL[qid]).compute()
@@ -167,7 +186,8 @@ for fmt, paths, glob_pat in [
 # pretty print
 # ------------------------------------------------------------------
 tbl = pd.DataFrame(results).pivot_table(
-        index=["engine", "fmt"], columns="query", values="sec")
+    index=["engine", "fmt"], columns="query", values="sec"
+)
 print("\nWall‑time (seconds) on three sample files:\n")
 print(tbl.round(3))
 
