@@ -1,17 +1,18 @@
 from confluent_kafka import Consumer, KafkaException, KafkaError
 import json
 
-GROUP_ID = 'my_confluent_consumer_group'
-BOOTSTRAP_SERVERS = 'localhost:9092'
-YELLOW_TAXI_TOPIC = 'yellow-taxi'
+GROUP_ID = "my_confluent_consumer_group"
+BOOTSTRAP_SERVERS = "localhost:9092"
+YELLOW_TAXI_TOPIC = "yellow-taxi"
+
 
 def create_consumer():
     conf = {
-        'bootstrap.servers': BOOTSTRAP_SERVERS,
-        'group.id': GROUP_ID,
-        'auto.offset.reset': 'earliest',
-        'enable.auto.commit': True,     
-        'auto.commit.interval.ms': 1000 
+        "bootstrap.servers": BOOTSTRAP_SERVERS,
+        "group.id": GROUP_ID,
+        "auto.offset.reset": "earliest",
+        "enable.auto.commit": True,
+        "auto.commit.interval.ms": 1000,
     }
     try:
         consumer = Consumer(conf)
@@ -20,6 +21,7 @@ def create_consumer():
     except Exception as e:
         print(f"Error initializing Confluent Kafka Consumer: {e}")
         return None
+
 
 def consume_messages(consumer):
     consumer.subscribe([YELLOW_TAXI_TOPIC])
@@ -33,9 +35,8 @@ def consume_messages(consumer):
         if msg.error():
             raise KafkaException(msg.error())
         else:
-            decoded_value = json.loads(msg.value().decode('utf-8'))
+            decoded_value = json.loads(msg.value().decode("utf-8"))
             print(decoded_value)
-
 
 
 def main():
