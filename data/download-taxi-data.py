@@ -11,7 +11,7 @@ def download_data_set(api_data):
     end = api_data.get("end")
     start = api_data.get("start")
     save_location = (
-        "trip_record_data" + api_data.get("save_folder") + "/{}-{:02}.parquet"
+        "trip_record_data/" + api_data.get("save_folder") + "/{}-{:02}.parquet"
     )
 
     make_directory(api_data.get("save_folder"))
@@ -48,7 +48,7 @@ FOR_HIRE_API = {
 HIGH_VOLUME_API = {
     "url": "https://d37ci6vzurychx.cloudfront.net/trip-data/fhvhv_tripdata_{}-{:02}.parquet",
     "save_folder": "high_volume",
-    "start": 2021,
+    "start": 2019,
     "end": 2025,
 }
 
