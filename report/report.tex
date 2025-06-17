@@ -1,7 +1,7 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % NYC TLC Big-Data Project 2024/25  —  full self-contained LaTeX source
 % ≈ 8 000 words  (≈ 47 000 characters, ≈ 12 IEEE pages incl. figs)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
 
@@ -20,7 +20,7 @@
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}%
 \kern-.08em T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
 \title{Data-Driven Insights for Urban Mobility:\\
@@ -40,7 +40,7 @@
 
 \maketitle
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{abstract}
   Open mobility data enable evidence-based transport planning, yet the
   New York City Taxi \& Limousine Commission (TLC) archive—three billion
@@ -66,7 +66,7 @@
   streaming
 \end{IEEEkeywords}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}\label{sec:intro}
 The digitalisation of taxi and ride-hail operations supplies cities
 with unprecedented fine-grained mobility records.
@@ -100,7 +100,7 @@ Key contributions:
     augmentation for every trip.
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{CRISP-DM Road-Map}\label{sec:crisp}
 CRISP-DM prescribes six iterative phases.
 Table \ref{tab:crisp} maps each phase to concrete tasks (T1–T8).
@@ -128,7 +128,7 @@ Table \ref{tab:crisp} maps each phase to concrete tasks (T1–T8).
   \end{tabular}
 \end{table}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Business Understanding}
 Urban mobility is rapidly shifting from medallion taxis toward platform
 economies.  NYC planners face two strategic questions:
@@ -145,7 +145,8 @@ Integrating those signals is a prerequisite for predictive dispatch and equitabl
 We therefore translate each CRISP-DM phase into a concrete task
 (T1 – T8) aligned with the project brief.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Data Understanding}
 The analysis utilizes four distinct datasets: Yellow Taxi, Green Taxi, For-Hire Vehicle (FHV), and High-Volume
 For-Hire Vehicle (HVFHV) trip records. This data was acquired from the
@@ -268,7 +269,7 @@ integrity of our time-series analysis and prevents the inclusion of out-of-scope
 Spatial joins use the TLC Zone Shapefile (EPSG:2263);
 temporal joins round to the nearest hour.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Data Preparation \& Quality Profiling}\label{sec:prep}
 \subsection{Row-group optimisation (T1)}
 The original TLC Parquet
@@ -302,7 +303,7 @@ We have 2 716 out-of-bounds
 points; 61 \% cluster around Newark
 airport, reflecting device mis-geocode.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{HPC Implementation}\label{sec:method}
 \subsection{Cluster hardware}
 Arnes “Raccoon” partition: 8 × Dell C6525, each
@@ -338,9 +339,9 @@ We can depict such a DAG: raw Parquet → ETL → quality audit →
 augmentation → partitioned write-back.
 GitHub Actions re-validates nightly on a 1 \% sample.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Exploratory Spatio-Temporal Analysis}\label{sec:eda}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{T4 — Exploratory analysis (full corpus)}
 \label{sec:t4-explore}
 
@@ -431,7 +432,7 @@ single-occupancy trips dominate both fleets (>72 %), but Green exhibits a
   baseline features vs.\ context-augmented (+weather, POI, events).
   Feature importance could be graphically depicted to provide first order insight into the solution.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   \section{Streaming Analytics (T6)}\label{sec:stream}
   \subsection{Design choices}
   Kafka 2.8+Faust keeps JSON schemas lightweight (43 B/record) and
@@ -460,7 +461,7 @@ single-occupancy trips dominate both fleets (>72 %), but Green exhibits a
   %Rolling borough dashboards (trip_time.csv, distance.csv, fare.csv)
   %confirm evening rush (Mon-Thu 18:00) as the most volatile period.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   \section{Modal Competition Analysis (T8)}\label{sec:impact}
   Figure \ref{fig:mode-evolution} depicts monthly trip-share evolution.
   Yellow declines steadily while HVFHV rises.
@@ -475,7 +476,7 @@ single-occupancy trips dominate both fleets (>72 %), but Green exhibits a
     \label{fig:mode-evolution}
   \end{figure}
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   \section{Discussion}\label{sec:discussion}
   \textbf{Why DuckDB + Dask?}
   DuckDB’s parallel scan amortises task-startup overhead on many Parquet
@@ -496,19 +497,19 @@ single-occupancy trips dominate both fleets (>72 %), but Green exhibits a
   cartographic rendering (optional T9) were not attempted and remain open
   tasks.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   \section{Conclusion}\label{sec:conclusion}
   We delivered a reproducible HPC pipeline that cleans, augments and
   analyses the full 3-billion-row TLC corpus, then publishes live borough
   dashboards via Kafka.  Open-sourcing every artefact lowers the barrier
   for researchers and municipal agencies to build upon this work.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   \section*{Acknowledgment}
   We thank Arnes HPC for compute resources and NYC TLC, NOAA and NYC Open-Data
   for public datasets.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   \bibliographystyle{IEEEtran}
   \begin{thebibliography}{00}
 
