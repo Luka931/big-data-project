@@ -1,7 +1,3 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% NYC TLC Big-Data Project 2024/25  —  full self-contained LaTeX source
-% ≈ 8 000 words  (≈ 47 000 characters, ≈ 12 IEEE pages incl. figs)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \documentclass[conference]{IEEEtran}
 \IEEEoverridecommandlockouts
 
@@ -10,6 +6,7 @@
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{algorithmic}
 \usepackage{graphicx}
+\usepackage{svg}
 \usepackage{siunitx}
 \usepackage{booktabs}
 \usepackage{xcolor}
@@ -20,7 +17,7 @@
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}%
 \kern-.08em T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 \begin{document}
 
 \title{Data-Driven Insights for Urban Mobility:\\
@@ -40,7 +37,7 @@
 
 \maketitle
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 \begin{abstract}
   Open mobility data enable evidence-based transport planning, yet the
   New York City Taxi \& Limousine Commission (TLC) archive—three billion
@@ -66,7 +63,7 @@
   streaming
 \end{IEEEkeywords}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 \section{Introduction}\label{sec:intro}
 The digitalisation of taxi and ride-hail operations supplies cities
 with unprecedented fine-grained mobility records.
@@ -100,7 +97,7 @@ Key contributions:
     augmentation for every trip.
 \end{itemize}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 \section{CRISP-DM Road-Map}\label{sec:crisp}
 CRISP-DM prescribes six iterative phases.
 Table \ref{tab:crisp} maps each phase to concrete tasks (T1–T8).
@@ -128,7 +125,7 @@ Table \ref{tab:crisp} maps each phase to concrete tasks (T1–T8).
   \end{tabular}
 \end{table}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 \section{Business Understanding}
 Urban mobility is rapidly shifting from medallion taxis toward platform
 economies.  NYC planners face two strategic questions:
@@ -145,7 +142,7 @@ Integrating those signals is a prerequisite for predictive dispatch and equitabl
 We therefore translate each CRISP-DM phase into a concrete task
 (T1 – T8) aligned with the project brief.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 
 \section{Data Understanding}
 The analysis utilizes four distinct datasets: Yellow Taxi, Green Taxi, For-Hire Vehicle (FHV), and High-Volume
@@ -254,6 +251,113 @@ would be valid. Our focus will be on identifying and understanding truly erroneo
 example, which clearly predate any reasonable data collection period. This meticulous temporal validation ensures the
 integrity of our time-series analysis and prevents the inclusion of out-of-scope data.
 
+%=======================================================================================================================
+
+\section{Data Preparation}
+
+This section details the process of identifying and rectifying data inconsistencies to ensure the dataset comprises only
+correctly entered records. We'll focus on filtering outliers and correcting anomalies in key fields. Special attention
+will be given to pickup and dropoff datetimes, as previously noted, to remove entries outside valid operational periods.
+Additionally, we'll address other numerical outliers, such as unrealistically high or low fare amounts, to enhance data
+integrity for subsequent analysis.
+
+\subsection{Data Cleaning}
+A systematic data cleaning and filtering process was applied to each dataset. This process focused on identifying and
+addressing common data inconsistencies and outlier values. Dask was used for efficient processing of the large datasets.
+
+For the Yellow Taxi and Green Taxi datasets, the following conditions were used to identify problematic rows:
+\begin{itemize}
+  \item \emph{Temporal Inconsistencies}: Records where the Pickup Datetime was equal to or occurred after the
+    Dropoff Datetime. These indicate illogical trip durations.
+  \item \emph{Trip Distance Outliers}: Trips with a Trip distance less than or equal to 0, or greater than 100 miles. A
+    zero or negative distance is invalid, while distances exceeding 100 miles are considered extreme outliers for
+    typical New York City taxi rides.
+  \item \emph{Passenger Count Anomalies}: Trips reporting 0 passengers, which are usually data entry errors.
+  \item \emph{Fare Amount Outliers}: Fares less than or equal to \$0, or greater than \$350. Negative or zero fares are
+    invalid, and fares exceeding \$350 are considered highly improbable for a single trip.
+\end{itemize}
+
+For the For-Hire Vehicle (FHV) dataset, given its more limited column set, cleaning primarily focused on temporal consistency:
+\begin{itemize}
+  \item \emph{Temporal Inconsistencies}: Records where Pickup Datetime was equal to or occurred after Dropoff datetime.
+\end{itemize}
+
+The High-Volume For-Hire Vehicle (FHVHV) dataset underwent a similar, but slightly adjusted, cleaning process due to its
+specific fields:
+\begin{itemize}
+  \item \emph{Temporal Inconsistencies}: Records where Pickup Datetime was equal to or occurred after Dropoff datetime.
+  \item \emph{Trip Miles Outliers}: Trips with Trip Miles less than or equal to 0, or greater than 100 miles.
+  \item \emph{Trip Time Outliers}: Records with Trip Time less than or equal to 0, indicating invalid or missing duration.
+  \item \emph{Base Passenger Fare Outliers}: Base fares less than or equal to \$0, or greater than \$350.
+\end{itemize}
+
+For each dataset, the number of rows identified as problematic based on these criteria was computed and normalized by
+the total number of rows per year. These normalized counts provide a clear indication of data quality issues across
+different years. This systematic approach ensures that subsequent analyses are performed on a robust and reliable subset
+of the data.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[b]{0.45\linewidth}
+    \includesvg[width=\linewidth]{figures/yellow_taxi_cleaning.svg}
+    \caption{Yellow Taxi Dataset}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[b]{0.45\linewidth}
+    \includesvg[width=\linewidth]{figures/green_taxi_cleaning.svg}
+    \caption{Green Taxi Dataset}
+  \end{minipage}
+
+  \vspace{1em}
+
+  \begin{minipage}[b]{0.45\linewidth}
+    \includesvg[width=\linewidth]{figures/for_hire_cleaning.svg}
+    \caption{For Hire Vehicles Dataset}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[b]{0.45\linewidth}
+    \includesvg[width=\linewidth]{figures/high_volume_cleaning.svg}
+    \caption{High Volume For Hire Vehicles Dataset}
+  \end{minipage}
+
+  \caption{Normalized Rows Count That Were Removed From Datasets}
+
+\end{figure}
+
+\subsection{Data Integration}
+
+To enhance the analytical depth of the core TLC trip record data, several auxiliary datasets were integrated, providing
+a more comprehensive contextual understanding of urban mobility patterns. This multi-source approach allows for the
+investigation of external factors influencing transportation dynamics.
+
+Firstly, hourly weather data was incorporated to account for environmental influences on travel behavior. This data,
+retrieved from the Open-Meteo archive API, includes granular measurements of temperature, precipitation (rain, snowfall,
+snow depth), and wind conditions (speed and gusts). By precisely matching each trip's Pickup Datetime to the
+corresponding hourly weather conditions, we can analyze the impact of varying meteorological factors on trip frequency,
+duration, and demand fluctuations.
+
+Secondly, geographical context was established using the official New York City Taxi Zones shapefile. This foundational
+geographical layer was crucial for accurately interpreting the Pick-up Location ID and Drop-off Location ID fields in
+the trip data. It provided the necessary spatial framework to define the boundaries of each taxi zone, enabling detailed
+geographical analysis and visualization of trip origins and destinations.
+
+Furthermore, points-of-interest (POI) data were integrated to characterize the activity generators and attractors within
+each taxi zone. Datasets from the NYC Open Data portal were leveraged for this purpose: school locations, university
+locations, and a broader collection of general points of interest. For both the Pickup Location and Dropoff Location
+associated with each trip, we calculated the aggregated count of schools, universities, and general points of interest
+residing within that specific taxi zone. These newly derived features provide quantitative measures of localized
+activity, which can be correlated with trip demand and travel patterns.
+
+Additionally, a binary flag indicating whether a given day was a public holiday in New York State was appended to the
+dataset. This allows for the analysis of distinct trip patterns and demand shifts observed during holidays.
+
+It is important to note a limitation regarding external event information. While the integration of major city events
+could offer valuable insights into surge demand, the available event dataset presented a significant challenge. Its
+reliance on string-formatted addresses, necessitating a geolocating service for conversion into usable geographical
+coordinates, rendered its integration infeasible within the project's scope and resource constraints. Consequently,
+direct correlation of trip data with specific event-driven demand fluctuations was not possible in this analysis.
+
+%=======================================================================================================================
 \section{Old Stuff}
 
 \subsection{Auxiliary sources}
@@ -269,7 +373,7 @@ integrity of our time-series analysis and prevents the inclusion of out-of-scope
 Spatial joins use the TLC Zone Shapefile (EPSG:2263);
 temporal joins round to the nearest hour.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 \section{Data Preparation \& Quality Profiling}\label{sec:prep}
 \subsection{Row-group optimisation (T1)}
 The original TLC Parquet
@@ -303,7 +407,7 @@ We have 2 716 out-of-bounds
 points; 61 \% cluster around Newark
 airport, reflecting device mis-geocode.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 \section{HPC Implementation}\label{sec:method}
 \subsection{Cluster hardware}
 Arnes “Raccoon” partition: 8 × Dell C6525, each
@@ -339,9 +443,9 @@ We can depict such a DAG: raw Parquet → ETL → quality audit →
 augmentation → partitioned write-back.
 GitHub Actions re-validates nightly on a 1 \% sample.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 \section{Exploratory Spatio-Temporal Analysis}\label{sec:eda}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%=======================================================================================================================
 \subsection{T4 — Exploratory analysis (full corpus)}
 \label{sec:t4-explore}
 
@@ -355,14 +459,6 @@ Figure~\ref{fig:hour-of-day} confirms the classic bimodal pattern for Yellow
 taxis—weekday commuter peaks at 08:00 and 18:00. The
 shape stability across years indicates that the pronounced COVID shock sits
 largely in the \emph{level} of demand, not its intraday shape.
-
-\begin{figure}[htbp]
-  \centering
-  % replace with your actual file name
-  \includegraphics[width=0.95\linewidth]{figures/hour_of_day_trips.png}
-  \caption{Hourly pickups (2019), Yellow.}
-  \label{fig:hour-of-day}
-\end{figure}
 
 \paragraph*{Weekly seasonality.}
 Weekend leisure demand dominates the Green fleet: Saturday volumes exceed
@@ -379,150 +475,150 @@ baseline in any downstream forecasting model.
 
 \paragraph*{Rider behaviour signals.}
 Passenger-count histograms (Fig.~\ref{fig:passenger-dist}) reveal that
-single-occupancy trips dominate both fleets (>72 %), but Green exhibits a
-  longer tail—likely larger party airport runs from outer boroughs.  Combined
-  with payment-type skew (not shown), these distributions help rule-in candidate
-  features for fraud-detection pipelines.
+single-occupancy trips dominate both fleets (>72 \%), but Green exhibits a
+longer tail—likely larger party airport runs from outer boroughs.  Combined
+with payment-type skew (not shown), these distributions help rule-in candidate
+features for fraud-detection pipelines.
 
-  \begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\linewidth]{figures/passenger_count_yellow.png}
-    \caption{Passenger-count distribution, 2024 trips.}
-    \label{fig:passenger-count-yellow}
-  \end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{figures/passenger_count_yellow.png}
+  \caption{Passenger-count distribution, 2024 trips.}
+  \label{fig:passenger-count-yellow}
+\end{figure}
 
-  \paragraph*{Cost–distance elasticity.}
-  A sanity check on fare integrity plots fare against trip distance for the 2020
-  Yellow sample (Fig.~\ref{fig:fare-vs-dist}).  The near-linear trend up to
-  \(\sim\!25\;\mathrm{km}\) validates meter calibration; high-variance outliers
-  above 150/5 km correspond to JFK flat-rate journeys and are \emph{retained}
-  rather than treated as anomalies.
+\paragraph*{Cost–distance elasticity.}
+A sanity check on fare integrity plots fare against trip distance for the 2020
+Yellow sample (Fig.~\ref{fig:fare-vs-dist}).  The near-linear trend up to
+\(\sim\!25\;\mathrm{km}\) validates meter calibration; high-variance outliers
+above 150/5 km correspond to JFK flat-rate journeys and are \emph{retained}
+rather than treated as anomalies.
 
-  \begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.9\linewidth]{figures/fare_vs_distance.png}
-    \caption{Fare vs.\ trip distance (Yellow 2020).}
-    \label{fig:fare-vs-dist}
-  \end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{figures/fare_vs_distance.png}
+  \caption{Fare vs.\ trip distance (Yellow 2020).}
+  \label{fig:fare-vs-dist}
+\end{figure}
 
-  \paragraph*{Inter-modal market split.}
-  Finally, we pre-compute the monthly HVFHS (ride-hail) market share to feed the
-  impact analysis in Section~\ref{sec:impact}.  The resulting time-series
-  (Fig.~\ref{fig:mode-share}, p.~\pageref{fig:mode-share}) shows ride-hail
-  surpassing Yellow in late 2020 and reaching a 57 \% plateau by mid-2024.
+\paragraph*{Inter-modal market split.}
+Finally, we pre-compute the monthly HVFHS (ride-hail) market share to feed the
+impact analysis in Section~\ref{sec:impact}.  The resulting time-series
+(Fig.~\ref{fig:mode-share}, p.~\pageref{fig:mode-share}) shows ride-hail
+surpassing Yellow in late 2020 and reaching a 57 \% plateau by mid-2024.
 
-  \vspace{0.5em}
-  In sum, EDA corroborates cleaning efficacy, quantifies modal behavioural
-  differences and surfaces covariates (hour-of-day, passenger count, weather
-  interactions) that materially improve predictive models in T5.
+\vspace{0.5em}
+In sum, EDA corroborates cleaning efficacy, quantifies modal behavioural
+differences and surfaces covariates (hour-of-day, passenger count, weather
+interactions) that materially improve predictive models in T5.
 
-  \subsection{Temporal signatures}
-  Hourly pickup vectors (24-D) are clustered via Ward linkage into
-  commuter-dominant, nightlife-dominant, uniform.
-  Yellow taxis drift commuter → uniform after 2020, echoing WFH demand.
+\subsection{Temporal signatures}
+Hourly pickup vectors (24-D) are clustered via Ward linkage into
+commuter-dominant, nightlife-dominant, uniform.
+Yellow taxis drift commuter → uniform after 2020, echoing WFH demand.
 
-  \subsection{Spatial flows}
-  A 310 × 310 OD matrix (2024) yields 92 k non-zero entries
-  (sparsity 0.96).
-  Edges with \(>\!50\text{k}\) trips: Midtown → LaGuardia now \#1,
-  overtaking Midtown → JFK.
+\subsection{Spatial flows}
+A 310 × 310 OD matrix (2024) yields 92 k non-zero entries
+(sparsity 0.96).
+Edges with \(>\!50\text{k}\) trips: Midtown → LaGuardia now \#1,
+overtaking Midtown → JFK.
 
-  \subsection{Trip-duration determinants}
-  Gradient-boosted trees (500 trees, depth 6, lr 0.05) could provide a good baseline for this problem,
-  baseline features vs.\ context-augmented (+weather, POI, events).
-  Feature importance could be graphically depicted to provide first order insight into the solution.
+\subsection{Trip-duration determinants}
+Gradient-boosted trees (500 trees, depth 6, lr 0.05) could provide a good baseline for this problem,
+baseline features vs.\ context-augmented (+weather, POI, events).
+Feature importance could be graphically depicted to provide first order insight into the solution.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  \section{Streaming Analytics (T6)}\label{sec:stream}
-  \subsection{Design choices}
-  Kafka 2.8+Faust keeps JSON schemas lightweight (43 B/record) and
-  allows scikit-learn's MiniBatch K-Means to run inside the agent.
-  One topic per mode permits differential retention—Yellow 7 d,
-  HVFHV 14 d—without schema drift.
+%=======================================================================================================================
+\section{Streaming Analytics (T6)}\label{sec:stream}
+\subsection{Design choices}
+Kafka 2.8+Faust keeps JSON schemas lightweight (43 B/record) and
+allows scikit-learn's MiniBatch K-Means to run inside the agent.
+One topic per mode permits differential retention—Yellow 7 d,
+HVFHV 14 d—without schema drift.
 
-  \subsection{Throughput and latency}
-  Deployed on a three-node Docker Swarm (Ryzen 7 3700X × 3).
-  `producer.py` batches writes; observed 3 100 msg s\(^{-1}\) per core.
+\subsection{Throughput and latency}
+Deployed on a three-node Docker Swarm (Ryzen 7 3700X × 3).
+`producer.py` batches writes; observed 3 100 msg s\(^{-1}\) per core.
 
-  \begin{table}[htbp]
-    \caption{Kafka pipeline metrics (30-min soak, 4.5 k msg s\(^{-1}\))}
-    \label{tab:kafka-metrics}
-    \centering
-    \begin{tabular}{lrrr}
-      \toprule
-      Component & Thruput & CPU \% & p95 lat. \\ \midrule
-      Producer        & 3.1 k/s & 48 & — \\
-      Faust worker    & 4.8 k/s & 66 & \SI{7}{ms} \\
-      Postgres sink   & 4.9 k/s & 35 & \SI{12}{ms} \\
-      \bottomrule
-    \end{tabular}
-  \end{table}
+\begin{table}[htbp]
+  \caption{Kafka pipeline metrics (30-min soak, 4.5 k msg s\(^{-1}\))}
+  \label{tab:kafka-metrics}
+  \centering
+  \begin{tabular}{lrrr}
+    \toprule
+    Component & Thruput & CPU \% & p95 lat. \\ \midrule
+    Producer        & 3.1 k/s & 48 & — \\
+    Faust worker    & 4.8 k/s & 66 & \SI{7}{ms} \\
+    Postgres sink   & 4.9 k/s & 35 & \SI{12}{ms} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-  %Rolling borough dashboards (trip_time.csv, distance.csv, fare.csv)
-  %confirm evening rush (Mon-Thu 18:00) as the most volatile period.
+%Rolling borough dashboards (trip_time.csv, distance.csv, fare.csv)
+%confirm evening rush (Mon-Thu 18:00) as the most volatile period.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  \section{Modal Competition Analysis (T8)}\label{sec:impact}
-  Figure \ref{fig:mode-evolution} depicts monthly trip-share evolution.
-  Yellow declines steadily while HVFHV rises.
-  A formal non-parametric trend test (e.g.\ Mann–Kendall) was \emph{not}
-  executed; implementing such statistical validation is left for future
-  work.
+%=======================================================================================================================
+\section{Modal Competition Analysis (T8)}\label{sec:impact}
+Figure \ref{fig:mode-evolution} depicts monthly trip-share evolution.
+Yellow declines steadily while HVFHV rises.
+A formal non-parametric trend test (e.g.\ Mann–Kendall) was \emph{not}
+executed; implementing such statistical validation is left for future
+work.
 
-  \begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.88\linewidth]{figures/mode_evolution.png}
-    \caption{Modal trip share evolution, Feb 2019 – Dec 2024.}
-    \label{fig:mode-evolution}
-  \end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.88\linewidth]{figures/mode_evolution.png}
+  \caption{Modal trip share evolution, Feb 2019 – Dec 2024.}
+  \label{fig:mode-evolution}
+\end{figure}
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  \section{Discussion}\label{sec:discussion}
-  \textbf{Why DuckDB + Dask?}
-  DuckDB’s parallel scan amortises task-startup overhead on many Parquet
-  fragments, while Dask orchestrates cluster-wide joins and write-backs.
+%=======================================================================================================================
+\section{Discussion}\label{sec:discussion}
+\textbf{Why DuckDB + Dask?}
+DuckDB’s parallel scan amortises task-startup overhead on many Parquet
+fragments, while Dask orchestrates cluster-wide joins and write-backs.
 
-  \textbf{Data robustness.}
-  Only 0.07 \% of rows were quarantined, yet removing
-  negative-duration trips avoids skewing fare-per-minute metrics.  A
-  reject log lets domain experts re-include rows if warranted.
+\textbf{Data robustness.}
+Only 0.07 \% of rows were quarantined, yet removing
+negative-duration trips avoids skewing fare-per-minute metrics.  A
+reject log lets domain experts re-include rows if warranted.
 
-  \textbf{Streaming vs.\ batch ML.}
-  MiniBatch K-Means is tractable in streams but blind to temporal
-  context; density-based algorithms (e.g.\ DenStream) could flag
-  short-lived surges and are a promising extension.
+\textbf{Streaming vs.\ batch ML.}
+MiniBatch K-Means is tractable in streams but blind to temporal
+context; density-based algorithms (e.g.\ DenStream) could flag
+short-lived surges and are a promising extension.
 
-  \textbf{Limitations.}
-  Distributed ML at scale (CRISP Deployment—T7) and automated
-  cartographic rendering (optional T9) were not attempted and remain open
-  tasks.
+\textbf{Limitations.}
+Distributed ML at scale (CRISP Deployment—T7) and automated
+cartographic rendering (optional T9) were not attempted and remain open
+tasks.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  \section{Conclusion}\label{sec:conclusion}
-  We delivered a reproducible HPC pipeline that cleans, augments and
-  analyses the full 3-billion-row TLC corpus, then publishes live borough
-  dashboards via Kafka.  Open-sourcing every artefact lowers the barrier
-  for researchers and municipal agencies to build upon this work.
+%=======================================================================================================================
+\section{Conclusion}\label{sec:conclusion}
+We delivered a reproducible HPC pipeline that cleans, augments and
+analyses the full 3-billion-row TLC corpus, then publishes live borough
+dashboards via Kafka.  Open-sourcing every artefact lowers the barrier
+for researchers and municipal agencies to build upon this work.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  \section*{Acknowledgment}
-  We thank Arnes HPC for compute resources and NYC TLC, NOAA and NYC Open-Data
-  for public datasets.
+%=======================================================================================================================
+\section*{Acknowledgment}
+We thank Arnes HPC for compute resources and NYC TLC, NOAA and NYC Open-Data
+for public datasets.
 
-  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  \bibliographystyle{IEEEtran}
-  \begin{thebibliography}{00}
+%=======================================================================================================================
+\bibliographystyle{IEEEtran}
+\begin{thebibliography}{00}
 
-    \bibitem{zhang2019deep}
-    D.~Zhang \emph{et al.}, “Deep learning + urban human mobility: A survey,”
-    \emph{ACM Computing Surveys}, vol.~52, no.~5, 2019.
+  \bibitem{zhang2019deep}
+  D.~Zhang \emph{et al.}, “Deep learning + urban human mobility: A survey,”
+  \emph{ACM Computing Surveys}, vol.~52, no.~5, 2019.
 
-    \bibitem{yoro2019bigdata}
-    A.~Yorozu \emph{et al.}, “Big-data analytics of taxi operations in New York
-    City,” \emph{J. Advanced Transportation}, 2019.
+  \bibitem{yoro2019bigdata}
+  A.~Yorozu \emph{et al.}, “Big-data analytics of taxi operations in New York
+  City,” \emph{J. Advanced Transportation}, 2019.
 
-    % — add additional references here as needed —
+  % — add additional references here as needed —
 
-  \end{thebibliography}
+\end{thebibliography}
 
-  \end{document}
+\end{document}
