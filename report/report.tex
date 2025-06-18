@@ -151,11 +151,18 @@ For-Hire Vehicle (HVFHV) trip records. This data was acquired from the
 Each dataset is organized by year, month, and vehicle type, and is provided in a comma-separated value (CSV) format.
 
 Within these trip records, location information for pickups and drop-offs is represented by numerical identifiers
-ranging from 1 to 263. For FHV records prior to 2017, only pickup locations are consistently available. These numerical
-IDs correspond to specific Taxi Zones, which can be integrated with the trip records through a join operation using
-independently downloadable tables or geospatial files (maps/shapefiles). It is important to note that these Taxi Zones
-are derived from the NYC Department of City Planning's Neighborhood Tabulation Areas (NTAs), thereby providing a
-neighborhood-level approximation for trip origins and destinations.
+ranging from 1 to 263, \ref{fig:nyc-zones-map}. For FHV records prior to 2017, only pickup locations are consistently
+available. These numerical IDs correspond to specific Taxi Zones, which can be integrated with the trip records through
+a join operation using independently downloadable tables or geospatial files (maps/shapefiles). It is important to note
+that these Taxi Zones are derived from the NYC Department of City Planning's Neighborhood Tabulation Areas (NTAs),
+thereby providing a neighborhood-level approximation for trip origins and destinations.
+
+\begin{figure}[htbp]
+  \label{fig:nyc-zones-map}
+  \centering
+  \includesvg[width=\linewidth]{figures/nyc_taxi_zones_map_with_ids.svg}
+  \caption{Yellow Taxi Dataset}
+\end{figure}
 
 \subsubsection*{Yellow Taxi Dataset}
 Data pertaining to trips made by New York City's yellow taxis has been collected and submitted to the NYC Taxi and
