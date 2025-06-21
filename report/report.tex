@@ -393,6 +393,110 @@ database. It provides a strong and flexible foundation for the next steps in the
 
 \section{Exploratory Data Analysis}
 
+In this section, we will look closely at three main areas to better understand our data:
+\begin{itemize}
+  \item \emph{Temporal Trends:} We'll look at how trip activity changes over time. This includes looking at patterns
+    across different times of day, days of the week, and months of the year. Knowing these trends can help us identify the
+    times of day when there is the most demand for each vehicle type, as well as the times of year when there is the most
+    demand.
+  \item \emph{Geographical Patterns:} We'll explore hotspots for pick ups and drop offs in New York City. By looking at
+    where people are going, we can see where there's high demand, popular routes, and areas where there's not enough
+    service for certain types of vehicles.
+  \item \emph{Passenger Counts:} We'll look at the number of passengers on each trip for each service type. This
+    analysis can show typical ridership patterns and how each vehicle category is used by individuals or groups.
+\end{itemize}
+In this section, we'll use visual aids to clearly show our findings. These visual representations will help us identify
+important patterns, differences, and relationships within the data. Our goal is to find important information that can
+help businesses and city officials make decisions and create plans for urban transportation in New York City.
+
+\subsection{Temporal Trends}
+
+\subsubsection{Hourly Analysis}
+
+\begin{figure}[htbp]
+  \label{fig:hourly-line-plot}
+  \centering
+  \includesvg[width=\linewidth]{figures/normalized_hourly_trip_lineplot.svg}
+  \caption{Normalized number of trips per hour of day}
+\end{figure}
+
+Yellow Taxis show a steady increase in rides from the early morning, with a prominent evening peak. Green Taxis have a
+similar pattern to Yellow Taxis, with a strong evening rush hour, and they have proportionaly the highest number of
+rides during this time. FHVs also have their busiest time at 18:00., with a slightly earlier low point compared to taxis.
+FHVHVs show a pattern that's very similar to other FHV services, with a strong evening peak and a gradual increase
+throughout the day.
+
+\begin{itemize}
+  \item \emph{Peak Hours:}  All taxi and for-hire vehicle (FHV) services (like Yellow Taxi, Green Taxi, FHV, and FHVHV)
+    are very busy around 18:00 This suggests that there is a strong connection between the end of the typical workday
+    and evening commutes.
+  \item \emph{Lowest Activity:} The lowest activity for all services is observed in the early morning hours, specifically
+    between 03:00 and 05:00. This is consistent with the observation that demand for transportation is typically minimal
+    during overnight hours.
+  \item \emph{Morning Rush:} There are more rides across all services from 05:00 or 06:00, with a smaller peak in the
+    morning around 08:00 - 09:00, probably because of the morning commute.
+  \item \emph{Afternoon/Evening Surge:} After a small decrease around lunchtime, there is a big increase in rides that
+    builds up through the afternoon, reaching its highest point in the evening.
+\end{itemize}
+
+\subsubsection{Daily Analysis}
+
+All services demonstrate higher demand on Fridays and Saturdays, reflecting New York City's vibrant weekend activity.
+Green Taxis and FHVHVs exhibited the most significant increase in rides on Saturday compared to other days, potentially
+due to increased demand for weekend leisure and social activities, or operating more heavily in residential areas with
+higher weekend demand. While Yellow Taxis also experience high demand on Saturday, their peak is on Friday, indicating
+strong utilisation during the start of the weekend and potentially for business-related evening events.
+
+\begin{figure}[htbp]
+  \label{fig:daily-bar-plot}
+  \centering
+  \includesvg[width=\linewidth]{figures/normalized_daily_trip_bar.svg}
+  \caption{Normalized number of trips per day of week}
+\end{figure}
+
+\begin{itemize}
+  \item \emph{Weekend Peaks:} All services show a clear trend of increasing normalised ride counts towards the end of
+    the week, with Saturday generally being the busiest day. This shows that more people need to travel during the weekend.
+  \item \emph{Mid-Week Consistency:} The number of rides is fairly steady from Monday to Wednesday for most services,
+    but then it goes up a lot towards the weekend.
+  \item \emph{Sunday Activity:} Sunday is usually busier than the early weekdays, but less busy than Friday or Saturday,
+    which suggests a different pattern of usage compared to the workweek.
+\end{itemize}
+
+\subsubsection{Monthly Analysis}
+
+While Yellow and Green Taxis show a clear decline in summer, FHV and FHVHV services either remain robust or even
+increase in demand during these months. This suggests that FHV services could potentially capture demand from tourists
+or alternative travel patterns during the traditional vacation season for locals. The significant increase in FHV rides
+in the latter half of the year, particularly in December, is distinctive when compared to the more consistent or earlier
+peaks of Yellow and Green Taxis. This could be due to holiday shopping, seasonal events, or increased corporate travel.
+FHVHV services demonstrate a more stable ridership profile throughout the year, in contrast to the more significant
+seasonal fluctuations observed in other services, particularly following the initial decline in January.
+
+\begin{figure}[htbp]
+  \label{fig:monthly-bar-plot}
+  \centering
+  \includesvg[width=\linewidth]{figures/normalized_monthly_trip_bar.svg}
+  \caption{Normalized number of trips per month}
+\end{figure}
+
+\begin{itemize}
+  \item \emph{Seasonal Variations:} All TLC services show different seasonal patterns, with demand going up and down
+    during the year.
+  \item \emph{Summer Dip (Yellow and Green Taxis):} In the summer months (July and August), there are usually fewer
+    people using Yellow and Green Taxis. This could be because New Yorkers are leaving the city for vacations or because
+    there is less going on in the city.
+  \item \emph{FHV Summer Peak/Stability:} On the other hand, FHV and FHVHV services have a lot of passengers in the
+    summer (June, July, August and September for FHV; generally the same for FHVHV). This might suggest they are popular
+    with a different type of person or are less affected by typical summer slowdowns, possibly because of tourist
+    activity or people travelling for fun.
+  \item \emph{Autumn and Winter Increase:} Demand generally increases in the autumn months (September, October) and
+    remains strong into the early winter (November, December), with some services peaking in these months.
+  \item \emph{Early Year Fluctuations:} The months of January and February demonstrated a diverse range of patterns
+    across various services. Some services experienced a decline in activity, for instance, FHV in February and March.
+    In contrast, other services demonstrated resilience and remained relatively strong.
+\end{itemize}
+
 %=======================================================================================================================
 \bibliographystyle{IEEEtran}
 \begin{thebibliography}{00}
