@@ -183,10 +183,10 @@ for pick-up and drop-off, trip distances, itemized fare components, rate codes, 
 passenger counts. Consistent with yellow taxi data, these records are collected and provided to the NYC Taxi and
 Limousine Commission (TLC) by various technology service providers.
 
-\subsubsection*{For-Hire Vehicle and High Volume For-Hire Vehicle Datasets}
-The For-Hire Vehicle (FHV) dataset encompasses trip data from a range of bases, including high-volume for-hire vehicle
-(HVFHV) dispatchers (e.g., Uber, Lyft, Via, Juno, defined by dispatching $\ge$10,000 trips daily), community livery
-bases, luxury limousine bases, and black car bases.
+\subsubsection*{For-Hire Vehicle and High Volume For-Hire Vehicle Datasets} The For-Hire Vehicle (FHV) dataset
+encompasses trip data from a range of bases, including high-volume for-hire vehicle (HVFHV) dispatchers (e.g., Uber,
+Lyft, Via, Juno, defined by dispatching $\ge$10,000 trips daily), community livery bases, luxury limousine bases,
+and black car bases.
 
 The TLC began receiving FHV trip data in 2015, with the completeness of information evolving over time. Initially,
 in 2015, records included only the dispatching base number, pickup date/time, and pickup location ID. By summer 2017,
@@ -499,6 +499,8 @@ seasonal fluctuations observed in other services, particularly following the ini
 
 \subsection{Spatial Trends}
 
+\subsection{Pickup Locations}
+
 \begin{figure}[htbp]
   \label{fig:most-popular-pickup-locations}
   \centering
@@ -540,6 +542,34 @@ less adequately served by traditional taxi services.
 The fact that different services have different top pickup locations (with some overlaps) indicates that they
 collectively cater to the different transportation needs of New York City's residents and visitors across
 different areas and times of day
+
+\subsection{Dropoff Locations}
+
+\begin{figure}[htbp]
+  \label{fig:most-popular-dropoff-locations}
+  \centering
+  \includesvg[width=\linewidth]{figures/dropoff_locations_map.svg}
+  \caption{The map illustrates the most popular locations for dropping off customers in New York}
+\end{figure}
+
+\subsubsection*{Yellow Taxis} The top drop-off locations for Yellow Taxis are very similar to their top pickup locations.
+This suggests that Yellow Taxis are mostly used to travel within Manhattan, especially in the busiest areas. People use
+Yellow Taxis to get around these areas, and mostly consist of short trips, that start and finish in the centre of Manhattan.
+
+\subsubsection*{Green Taxi} Green Taxi drop-off locations align with their pickup patterns (similar to the Yellow Taxi
+dataset), suggesting that their primary function is to facilitate travel within and between neighborhoods in the outer
+boroughs. The presence of 61 (a major Queens area) as a top dropoff suggests it is a significant destination for trips
+originating in other outer borough locations.
+
+\subsubsection*{FHV and FHVHV} It is important to note that 265 (LaGuardia Airport) was the most popular place for both
+FHV and FHVHV to drop off passengers, and 132 (JFK Airport) was also a popular pick. This shows that they play a big
+part in getting people from the airport to their destination.
+
+In summary, the dropoff location data highlights the key roles of Yellow and Green taxis in their respective geographic
+areas, while emphasising the vital function of For-Hire Vehicles (particularly high-volume ones) in linking the whole
+city to major transportation hubs like airports, as well as their pervasive presence in high-demand urban centres.
+
+\subsection{Routes}
 
 %=======================================================================================================================
 \bibliographystyle{IEEEtran}
