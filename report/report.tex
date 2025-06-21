@@ -571,6 +571,38 @@ city to major transportation hubs like airports, as well as their pervasive pres
 
 \subsection{Routes}
 
+\begin{figure}[htbp]
+  \label{fig:most-popular-routes}
+  \centering
+  \includesvg[width=\linewidth]{figures/popular_routes.svg}
+  \caption{The map illustrates the most popular routes in New York \\
+  (if a location is fully colored in it means that the most popular route is within the same location zone)}
+\end{figure}
+
+\subsubsection*{Yellow Taxi} The top four routes are 237-236, 236-237, 236-236 and 237-237. This is very revealing.
+IDs 237 and 236 are always some of the most popular places for Yellow Taxis to pick up and drop off customers. This
+shows that there is a lot of movement in and out of these two areas of Manhattan. It confirms their role in short,
+frequent trips for commuters, business travellers and tourists moving within high-density areas.  The average distance
+for these top routes is always low (e.g., 1.06 miles for 237-236, 0.67 miles for 236-236). The average duration is also
+quite short (for example, 7.2 minutes for 237-236, and 5.37 minutes for 236-236). Yellow Cab's most popular routes have
+a much higher number of passengers (in millions) than other services, showing how popular they are in their main
+operating areas. The average fares are moderate, reflecting the short distances.
+
+\subsubsection*{Green Taxi}  The top routes are often the same as Yellow Taxis, with the same pick-up and drop-off
+locations. This shows that Green Taxis are used a lot for travelling locally in certain outer-borough areas. Routes
+like 75-74, 41-42, and 74-75 suggest that people travel a lot between similar areas in the outer boroughs, which is
+what Green Taxis are supposed to do. Green Taxi's routes generally have slightly longer average durations than Yellow
+Taxis' (for example, 11-15 minutes), perhaps because they cover longer distances within their zones.On average, the
+distances are usually between 1 and 1.3 miles, and the fares match these distances.
+
+For all services, a large part of their most popular routes are where the pickup and dropoff locations are the same.
+This shows that a large number of rides for all TLC types are short trips within specific local areas or neighborhoods.
+
+Yellow Taxis are designed for short trips in and around Manhattan. Green Taxis mainly do local trips in the outer
+boroughs. FHV/FHVHV offer local trips in many more zones (including those Yellow and Green serve) and also handle
+longer, specific point-to-point connections, including airport routes. You can see these when you look at overall
+popular PUs/DOs.
+
 %=======================================================================================================================
 \bibliographystyle{IEEEtran}
 \begin{thebibliography}{00}
