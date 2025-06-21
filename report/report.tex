@@ -22,8 +22,7 @@
 
 \title{Data-Driven Insights for Urban Mobility:\\
   An 8-Year, 3-Billion-Row Analysis of NYC TLC Trips\\
-  with DuckDB, Dask and Kafka\thanks{Code \& artefacts:
-\url{https://github.com/Luka931/big-data-project}}}
+with DuckDB, Dask and Kafka}
 
 \author{\IEEEauthorblockN{Luka Pavićević}
   \IEEEauthorblockA{University of Ljubljana — FRI\\
@@ -161,7 +160,7 @@ thereby providing a neighborhood-level approximation for trip origins and destin
   \label{fig:nyc-zones-map}
   \centering
   \includesvg[width=\linewidth]{figures/nyc_taxi_zones_map_with_ids.svg}
-  \caption{Yellow Taxi Dataset}
+  \caption{Geographical shape for each location in New York}
 \end{figure}
 
 \subsubsection*{Yellow Taxi Dataset}
@@ -331,286 +330,68 @@ of the data.
 
 \end{figure}
 
-\subsection{Data Integration}
+\subsection{Data Integration (Task 5)}
 
-To enhance the analytical depth of the core TLC trip record data, several auxiliary datasets were integrated, providing
-a more comprehensive contextual understanding of urban mobility patterns. This multi-source approach allows for the
-investigation of external factors influencing transportation dynamics.
+To get more out of the core TLC trip record data, we added on some extra datasets. This gave us a better overall picture
+of how people move around cities. This multi-source approach lets us look at external factors that influence
+transportation dynamics.
 
-Firstly, hourly weather data was incorporated to account for environmental influences on travel behavior. This data,
-retrieved from the Open-Meteo archive API, includes granular measurements of temperature, precipitation (rain, snowfall,
-snow depth), and wind conditions (speed and gusts). By precisely matching each trip's Pickup Datetime to the
-corresponding hourly weather conditions, we can analyze the impact of varying meteorological factors on trip frequency,
-duration, and demand fluctuations.
+First, we used hourly weather data to see how the environment affects travel behavior. This data, which was retrieved
+from the Open-Meteo archive API, includes measurements of temperature, precipitation (rain, snowfall, and snow depth),
+and wind conditions (speed and gusts). By matching each trip's pickup time to the weather conditions at that time, we
+can see how different weather affects trip frequency, duration, and demand.
 
-Secondly, geographical context was established using the official New York City Taxi Zones shapefile. This foundational
-geographical layer was crucial for accurately interpreting the Pick-up Location ID and Drop-off Location ID fields in
-the trip data. It provided the necessary spatial framework to define the boundaries of each taxi zone, enabling detailed
+Second, we used the official New York City Taxi Zones shapefile to establish the geographical context. This basic
+geographical layer was key to accurately reading the Pick-up Location ID and Drop-off Location ID fields in the trip
+data. It gave us the spatial framework we needed to define the boundaries of each taxi zone, enabling detailed
 geographical analysis and visualization of trip origins and destinations.
 
-Furthermore, points-of-interest (POI) data were integrated to characterize the activity generators and attractors within
-each taxi zone. Datasets from the NYC Open Data portal were leveraged for this purpose: school locations, university
-locations, and a broader collection of general points of interest. For both the Pickup Location and Dropoff Location
-associated with each trip, we calculated the aggregated count of schools, universities, and general points of interest
-residing within that specific taxi zone. These newly derived features provide quantitative measures of localized
-activity, which can be correlated with trip demand and travel patterns.
+We also integrated points-of-interest (POI) data to understand the activity generators and attractors within each taxi
+zone. We used data from the NYC Open Data portal for this. That included school locations, university locations, and a
+bunch of other general points of interest. For each trip, we calculated the total number of schools, universities, and
+other points of interest in the taxi zone. These new features give us a way to measure local activity, and we can
+compare that with trip demand and travel patterns.
 
-Additionally, a binary flag indicating whether a given day was a public holiday in New York State was appended to the
-dataset. This allows for the analysis of distinct trip patterns and demand shifts observed during holidays.
+We also added a binary flag to the dataset to show if a day was a public holiday in New York State. This lets us look at
+different trip patterns and changes in demand that we see during holidays.
 
-It is important to note a limitation regarding external event information. While the integration of major city events
-could offer valuable insights into surge demand, the available event dataset presented a significant challenge. Its
-reliance on string-formatted addresses, necessitating a geolocating service for conversion into usable geographical
-coordinates, rendered its integration infeasible within the project's scope and resource constraints. Consequently,
-direct correlation of trip data with specific event-driven demand fluctuations was not possible in this analysis.
+It's important to note a limitation regarding external event information. While integrating major city events could
+offer valuable insights into surge demand, the available event dataset presented a significant challenge. It relied on
+string-formatted addresses, which meant it needed a geolocating service to convert them into geographical coordinates
+that could be used. This made it impossible to include it in the project because there weren't enough resources. So, we
+couldn't link trip data with specific event-driven demand changes in this analysis.
 
-%=======================================================================================================================
-\section{Old Stuff}
+\subsection{Data Fromat (Task 3)}
 
-\subsection{Auxiliary sources}
-\begin{itemize}
-  \item \textbf{Weather (NOAA ISD):} hourly temperature, precipitation,
-    wind at Central Park + LaGuardia.
-  \item \textbf{POIs:} public schools, universities, cultural venues,
-    top-50 tourist attractions.
-  \item \textbf{Events:} city-wide event permits (2022–2024) → binary
-    \texttt{event\_active}.
-\end{itemize}
+The acquired trip record data is very big and its structure is complicated. For this reason, it is very important to
+have a strong and efficient data management system to make effective analysis. We compared different data storage \ref{tab:diff-formats}
+formats to find the best solution. The assessment included uncompressed CSV, gzipped CSV, HDF5, and DuckDB.
+The results clearly showed that DuckDB was the better choice because it used less disk space and loaded data faster.
+Specifically, data.duckdb used just 13.6 MB of storage, which is better than the original CSV (59.0 MB), HDF5 (59.3 MB),
+and even the gzipped CSV (12.1 MB). While the gzipped CSV was slightly smaller in raw compressed size, it did not have
+the same benefits when loading. DuckDB was also very fast at loading data into a Pandas DataFrame, completing the
+operation in about 0.031 seconds. This was much faster than HDF5 (0.055 seconds), gzipped CSV (0.692 seconds), and the
+original CSV (0.749 seconds). These impressive performance metrics show that DuckDB is the best in-process SQL OLAP
+database. It provides a strong and flexible foundation for the next steps in the analysis.
 
-Spatial joins use the TLC Zone Shapefile (EPSG:2263);
-temporal joins round to the nearest hour.
-
-%=======================================================================================================================
-\section{Data Preparation \& Quality Profiling}\label{sec:prep}
-\subsection{Row-group optimisation (T1)}
-The original TLC Parquet
-packs monthly data in approximately 1 GB files.
-Such jumbo groups inhibit selective scan.
-We empirically searched group sizes
-\{50, 100, 200, 400 MB\}. 200 MB yielded
-the lowest area under the curve of
-(read-time × job-overhead). A full
-2019 Yellow scan on DuckDB improved from
-51 s (1 GB groups) to 28 s.
-
-\subsection{Anomaly taxonomy (T2)}
-Eight error types were detected:
-
-\begin{enumerate}
-  \item \emph{Bad year:} year $<\!2010$ or $>\!2026$
-    (480k rows, mainly FHV 2015).
-  \item \emph{Pickup = Drop-off timestamp.}
-  \item \emph{Drop-off timestamp before Pickup.}
-  \item \emph{Neg.\ duration but pos.\ fare}—
-    strong fraud signal.
-  \item \emph{Zero distance yet \textgreater0}.
-  \item \emph{Passenger count 0 or $>\!8$}.
-  \item \emph{Lat–lon outside NYC bounding box.}
-  \item \emph{VendorID NULL} in years where required.
-\end{enumerate}
-
-\paragraph*{Spatial outliers}
-We have 2 716 out-of-bounds
-points; 61 \% cluster around Newark
-airport, reflecting device mis-geocode.
-
-%=======================================================================================================================
-\section{HPC Implementation}\label{sec:method}
-\subsection{Cluster hardware}
-Arnes “Raccoon” partition: 8 × Dell C6525, each
-2 × AMD EPYC 7543 (64 cores total), 512 GB RAM, 100 Gb InfiniBand.
-BeeGFS parallel FS sustains \SI{12}{GB/s} aggregate read.
-
-\subsection{Software stack}
-\textbf{Dask 2024.3} orchestrates ETL;
-\textbf{DuckDB 0.10.2} executes in-situ SQL with \verb|threads=48|;
-\textbf{Kafka 2.8.1 + Faust 1.10} power streaming.
-Table \ref{tab:versions} pins versions for reproducibility.
-
-\begin{table}[htbp]
-  \caption{Key package versions (conda env)}
-  \label{tab:versions}
+\begin{table}[]
+  \label{tab:diff-formats}
+  \caption{ Comparison of different formats \\ (data from Green Taxi for year 2024) }
   \centering
-  \begin{tabular}{lc}
-    \toprule
-    Package & Version \\ \midrule
-    python & 3.11.7\\
-    dask / distributed & 2024.3 / 2024.3\\
-    pyarrow & 15.0.2\\
-    duckdb & 0.10.2\\
-    confluent\_kafka & 2.4.0\\
-    faust & 1.10.4\\
-    matplotlib & 3.8.4\\
-    \bottomrule
+  \begin{tabular}{ccc}
+    \textbf{Format}& \textbf{Size (MB)}& \textbf{Load Time (s)}\\
+    \hline \hline
+    CSV&58.99& 0.748\\
+    Compressed CSV&12.14& 0.692\\
+    HDF5&59.29& 0.054\\
+    DuckDB&13.64& 0.030\\
+    \hline
   \end{tabular}
 \end{table}
 
-\subsection{Workflow orchestration}
-We can depict such a DAG: raw Parquet → ETL → quality audit →
-augmentation → partitioned write-back.
-GitHub Actions re-validates nightly on a 1 \% sample.
-
 %=======================================================================================================================
-\section{Exploratory Spatio-Temporal Analysis}\label{sec:eda}
-%=======================================================================================================================
-\subsection{T4 — Exploratory analysis (full corpus)}
-\label{sec:t4-explore}
 
-Exploratory data analysis (EDA) serves two goals:
-(i)~to validate the success of cleaning steps~T1–T2, and
-(ii)~to supply domain intuition that later guides feature engineering (T5) and
-policy interpretation (Section~\ref{sec:impact}).
-
-\paragraph*{Temporal load profiles.}
-Figure~\ref{fig:hour-of-day} confirms the classic bimodal pattern for Yellow
-taxis—weekday commuter peaks at 08:00 and 18:00. The
-shape stability across years indicates that the pronounced COVID shock sits
-largely in the \emph{level} of demand, not its intraday shape.
-
-\paragraph*{Weekly seasonality.}
-Weekend leisure demand dominates the Green fleet: Saturday volumes exceed
-Tuesday by \(+42\,\%\) (Fig.~\ref{fig:dow}), while Yellow shows a milder
-\( +18\,\% \) uplift.  Such divergence motivates a mode-specific temporal
-baseline in any downstream forecasting model.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.9\linewidth]{figures/dow_trips_yellow.png}
-  \caption{Trips by day of week (2023).}
-  \label{fig:dow}
-\end{figure}
-
-\paragraph*{Rider behaviour signals.}
-Passenger-count histograms (Fig.~\ref{fig:passenger-dist}) reveal that
-single-occupancy trips dominate both fleets (>72 \%), but Green exhibits a
-longer tail—likely larger party airport runs from outer boroughs.  Combined
-with payment-type skew (not shown), these distributions help rule-in candidate
-features for fraud-detection pipelines.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.9\linewidth]{figures/passenger_count_yellow.png}
-  \caption{Passenger-count distribution, 2024 trips.}
-  \label{fig:passenger-count-yellow}
-\end{figure}
-
-\paragraph*{Cost–distance elasticity.}
-A sanity check on fare integrity plots fare against trip distance for the 2020
-Yellow sample (Fig.~\ref{fig:fare-vs-dist}).  The near-linear trend up to
-\(\sim\!25\;\mathrm{km}\) validates meter calibration; high-variance outliers
-above 150/5 km correspond to JFK flat-rate journeys and are \emph{retained}
-rather than treated as anomalies.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.9\linewidth]{figures/fare_vs_distance.png}
-  \caption{Fare vs.\ trip distance (Yellow 2020).}
-  \label{fig:fare-vs-dist}
-\end{figure}
-
-\paragraph*{Inter-modal market split.}
-Finally, we pre-compute the monthly HVFHS (ride-hail) market share to feed the
-impact analysis in Section~\ref{sec:impact}.  The resulting time-series
-(Fig.~\ref{fig:mode-share}, p.~\pageref{fig:mode-share}) shows ride-hail
-surpassing Yellow in late 2020 and reaching a 57 \% plateau by mid-2024.
-
-\vspace{0.5em}
-In sum, EDA corroborates cleaning efficacy, quantifies modal behavioural
-differences and surfaces covariates (hour-of-day, passenger count, weather
-interactions) that materially improve predictive models in T5.
-
-\subsection{Temporal signatures}
-Hourly pickup vectors (24-D) are clustered via Ward linkage into
-commuter-dominant, nightlife-dominant, uniform.
-Yellow taxis drift commuter → uniform after 2020, echoing WFH demand.
-
-\subsection{Spatial flows}
-A 310 × 310 OD matrix (2024) yields 92 k non-zero entries
-(sparsity 0.96).
-Edges with \(>\!50\text{k}\) trips: Midtown → LaGuardia now \#1,
-overtaking Midtown → JFK.
-
-\subsection{Trip-duration determinants}
-Gradient-boosted trees (500 trees, depth 6, lr 0.05) could provide a good baseline for this problem,
-baseline features vs.\ context-augmented (+weather, POI, events).
-Feature importance could be graphically depicted to provide first order insight into the solution.
-
-%=======================================================================================================================
-\section{Streaming Analytics (T6)}\label{sec:stream}
-\subsection{Design choices}
-Kafka 2.8+Faust keeps JSON schemas lightweight (43 B/record) and
-allows scikit-learn's MiniBatch K-Means to run inside the agent.
-One topic per mode permits differential retention—Yellow 7 d,
-HVFHV 14 d—without schema drift.
-
-\subsection{Throughput and latency}
-Deployed on a three-node Docker Swarm (Ryzen 7 3700X × 3).
-`producer.py` batches writes; observed 3 100 msg s\(^{-1}\) per core.
-
-\begin{table}[htbp]
-  \caption{Kafka pipeline metrics (30-min soak, 4.5 k msg s\(^{-1}\))}
-  \label{tab:kafka-metrics}
-  \centering
-  \begin{tabular}{lrrr}
-    \toprule
-    Component & Thruput & CPU \% & p95 lat. \\ \midrule
-    Producer        & 3.1 k/s & 48 & — \\
-    Faust worker    & 4.8 k/s & 66 & \SI{7}{ms} \\
-    Postgres sink   & 4.9 k/s & 35 & \SI{12}{ms} \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-%Rolling borough dashboards (trip_time.csv, distance.csv, fare.csv)
-%confirm evening rush (Mon-Thu 18:00) as the most volatile period.
-
-%=======================================================================================================================
-\section{Modal Competition Analysis (T8)}\label{sec:impact}
-Figure \ref{fig:mode-evolution} depicts monthly trip-share evolution.
-Yellow declines steadily while HVFHV rises.
-A formal non-parametric trend test (e.g.\ Mann–Kendall) was \emph{not}
-executed; implementing such statistical validation is left for future
-work.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.88\linewidth]{figures/mode_evolution.png}
-  \caption{Modal trip share evolution, Feb 2019 – Dec 2024.}
-  \label{fig:mode-evolution}
-\end{figure}
-
-%=======================================================================================================================
-\section{Discussion}\label{sec:discussion}
-\textbf{Why DuckDB + Dask?}
-DuckDB’s parallel scan amortises task-startup overhead on many Parquet
-fragments, while Dask orchestrates cluster-wide joins and write-backs.
-
-\textbf{Data robustness.}
-Only 0.07 \% of rows were quarantined, yet removing
-negative-duration trips avoids skewing fare-per-minute metrics.  A
-reject log lets domain experts re-include rows if warranted.
-
-\textbf{Streaming vs.\ batch ML.}
-MiniBatch K-Means is tractable in streams but blind to temporal
-context; density-based algorithms (e.g.\ DenStream) could flag
-short-lived surges and are a promising extension.
-
-\textbf{Limitations.}
-Distributed ML at scale (CRISP Deployment—T7) and automated
-cartographic rendering (optional T9) were not attempted and remain open
-tasks.
-
-%=======================================================================================================================
-\section{Conclusion}\label{sec:conclusion}
-We delivered a reproducible HPC pipeline that cleans, augments and
-analyses the full 3-billion-row TLC corpus, then publishes live borough
-dashboards via Kafka.  Open-sourcing every artefact lowers the barrier
-for researchers and municipal agencies to build upon this work.
-
-%=======================================================================================================================
-\section*{Acknowledgment}
-We thank Arnes HPC for compute resources and NYC TLC, NOAA and NYC Open-Data
-for public datasets.
+\section{Exploratory Data Analysis}
 
 %=======================================================================================================================
 \bibliographystyle{IEEEtran}
