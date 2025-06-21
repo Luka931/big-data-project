@@ -7,6 +7,7 @@ con = duckdb.connect("data/ducdb.db")
 BOOTSTRAP_SERVERS = "localhost:9092"
 KAFKA_TOPIC = "combinded_data"
 
+
 def get_data_in_batches(batch_size=100_000):
     offset = 0
     print(1)
@@ -20,6 +21,7 @@ def get_data_in_batches(batch_size=100_000):
         offset = offset + batch_size
 
         yield df.to_dict(orient="records")
+
 
 def delivery_report(err, msg):
     if err is not None:
@@ -56,6 +58,7 @@ def send_message(producer, topic_name, message_value):
         producer.poll(0)
     except Exception as e:
         print(f"Error sending message: {e}")
+
 
 def main():
     gen = get_data_in_batches()

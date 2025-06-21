@@ -1,4 +1,4 @@
-from confluent_kafka import  Consumer, KafkaException
+from confluent_kafka import Consumer, KafkaException
 import json
 import collections
 from datetime import datetime
@@ -60,11 +60,13 @@ def get_dict_of_deques(keys, window_size):
         }
     return dictionary
 
+
 def make_dirs():
     for loc in set(CHOSEN_LOCATIONS):
         os.makedirs(f"T6_kafka/results/{loc}", exist_ok=True)
     for borough in set(LOCATION_TO_BOROUGH.values()):
         os.makedirs(f"T6_kafka/results/{borough}", exist_ok=True)
+
 
 def save_to_file(name, dict):
     for key, values in dict.items():
@@ -73,6 +75,7 @@ def save_to_file(name, dict):
             continue
         with open(file_path, "a") as f:
             f.write(f"{statistics.mean(values)},\t{statistics.stdev(values)}\n")
+
 
 def consume_messages(consumer, window_size=1000):
     consumer.subscribe([KAFKA_TOPIC])
