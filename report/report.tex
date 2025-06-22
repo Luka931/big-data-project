@@ -20,9 +20,7 @@
 %=======================================================================================================================
 \begin{document}
 
-\title{Data-Driven Insights for Urban Mobility:\\
-  An 8-Year, 3-Billion-Row Analysis of NYC TLC Trips\\
-with DuckDB, Dask and Kafka}
+\title{Analysis of TLC Trip Record Data}
 
 \author{\IEEEauthorblockN{Luka Pavićević}
   \IEEEauthorblockA{University of Ljubljana — FRI\\
@@ -602,6 +600,54 @@ Yellow Taxis are designed for short trips in and around Manhattan. Green Taxis m
 boroughs. FHV/FHVHV offer local trips in many more zones (including those Yellow and Green serve) and also handle
 longer, specific point-to-point connections, including airport routes. You can see these when you look at overall
 popular PUs/DOs.
+
+\subsection{Service Distribution (Task 8)}
+
+\begin{figure}[htbp]
+  \label{fig:service-distribution}
+  \centering
+  \begin{minipage}[b]{0.95\linewidth}
+    \includesvg[width=\linewidth]{figures/visualize_fhvhv_total.svg}
+    \caption{Total Rides Count}
+  \end{minipage}
+
+  \vspace{1em}
+
+  \begin{minipage}[b]{0.95\linewidth}
+    \includesvg[width=\linewidth]{figures/visualize_fhvhv_relative.svg}
+    \caption{Relative Rides Count}
+  \end{minipage}
+
+  \caption{Monthly Rides by Service in NYC}
+
+\end{figure}
+
+\subsubsection*{Ride Volume Over Time} The line chart \ref{fig:service-distribution} illustrates the number of monthly
+rides for each service. As is evident in the dataset, which commenced in 2012, yellow taxis constituted the sole service,
+exhibiting a consistent ridership of 13-15 million rides per month. Green Taxis, introduced in 2013 to serve areas
+outside of Manhattan's central business district, initially experienced growth but have since seen a significant decline
+in ridership. The for-hire vehicle sector, and in particular the high-volume for-hire vehicle segment, has been a major
+driver in the growth of ride-sharing apps. Please note the initial high usage in "High-Volume For-Hire Vehicles" since 2019,
+which is due to a re-categorization of existing ride-sharing services for regulatory purposes. These services
+rapidly eclipsed yellow taxis, becoming the predominant force in the market.
+
+\subsubsection*{Market Shift} Recent market data indicates that Yellow Taxis' market share has decreased from 100\% to
+approximately 10-15\%. The most significant finding in this dataset is the dramatic decline in market share. High-volume
+for-hire vehicles now account for the majority of the market, consistently capturing over 80\% of all rides in the
+post-pandemic era. This indicates a fundamental shift in consumer preference and transportation habits.
+
+If you direct your attention to the sharp dip seen in all the lines in early 2020, this will be of particular interest.
+The impact of the pandemic resulted in a significant decrease in all forms of transportation in NYC. While ridership has
+been recovering since then, it highlights the vulnerability of the transportation sector to major public health crises.
+
+The data demonstrate clear seasonal patterns, with a notable increase in ridership during the spring and fall, and a
+decrease in the summer and winter months. These patterns are evident across all service types, though they are more
+pronounced in the pre-pandemic data.
+
+Prior to the pandemic, the emergence of high-volume for-hire services resulted in a significant overall increase in the
+total number of rides, indicating that these new services attracted additional customers to the market rather than
+simply replacing existing taxi users. However, it appears that the market has reached a saturation point, with the total
+number of rides not yet returning to its pre-pandemic peak.
 
 %=======================================================================================================================
 \bibliographystyle{IEEEtran}
