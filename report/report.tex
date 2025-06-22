@@ -36,108 +36,52 @@
 
 %=======================================================================================================================
 \begin{abstract}
-  Open mobility data enable evidence-based transport planning, yet the
-  New York City Taxi \& Limousine Commission (TLC) archive—three billion
-  trips, four service classes, 2.2 TB compressed—remains unwieldy for
-  traditional desktop workflows.
-  We present an open-source analytics stack that (i) cleans and
-  repartitions the full corpus on Arnes HPC using Dask + SLURM,
-  (ii) augments every trip with hourly weather and point-of-interest
-  context, (iii) executes exploratory spatio-temporal analysis via
-  DuckDB’s in-situ Parquet engine, and (iv) delivers sub-second rolling
-  statistics through a Kafka + Faust stream pipeline.
-  Cold-scan time falls by 46 \% after \SI{200}{MB} row-group tuning, and
-  contextual augmentation lifts trip-duration \(R^{2}\) by seven
-  percentage points.
-  Market-share dashboards show high-volume for-hire services absorbing
-  38 \% of Yellow-taxi demand between 2019 and 2024.
-  All artefacts are released to accelerate reproducible
-  urban-mobility research.
+  This report provides a thorough analysis of trip record data from the New York City Taxi and Limousine Commission (TLC),
+  covering Yellow Taxi, Green Taxi, For-Hire Vehicle (FHV) and High-Volume For-Hire Vehicle (HVFHV) services. The primary
+  objective is to gain an understanding of the complex dynamics of urban transportation in New York City by examining
+  temporal and spatial trends, market share distribution and the impact of external factors. The analysis uses a
+  multi-source approach, combining weather data, points of interest and public holiday information with the core trip
+  record datasets. A notable feature of this study is the implementation of a real-time data processing pipeline using
+  Apache Kafka to model and analyse streaming trip data. The findings reveal a significant market shift towards
+  high-volume for-hire services, distinct operational patterns between different service types and the profound impact of
+  the pandemic on the city's transport ecosystem. These insights are a valuable resource for urban planning,
+  transportation policy and business strategy in the evolving landscape of urban mobility.
 \end{abstract}
 
-\begin{IEEEkeywords}
-  big data, CRISP-DM, Dask, DuckDB, Kafka, TLC, mobility analytics,
-  streaming
-\end{IEEEkeywords}
+% \begin{IEEEkeywords}
+%   big data, CRISP-DM, Dask, DuckDB, Kafka, TLC, mobility analytics,
+%   streaming
+% \end{IEEEkeywords}
 
 %=======================================================================================================================
-\section{Introduction}\label{sec:intro}
-The digitalisation of taxi and ride-hail operations supplies cities
-with unprecedented fine-grained mobility records.
-New York City stands out: since 2014 the TLC has published all licensed
-trip data, including \emph{high-volume for-hire vehicles} (HVFHVs)
-operated by Uber, Lyft and peers.
-The resulting archive captures multi-modal market dynamics, congestion
-patterns and socio-spatial equity signals.
-Yet three challenges hamper operational use:
+\section{Introduction}
 
-\begin{enumerate}
-  \item \textbf{Volume.} 3 billion rows compress to 2.2 TB Parquet; naïve
-    Pandas or PostgreSQL pipelines time-out.
-  \item \textbf{Variety.} Four service classes differ in schema,
-    temporal coverage and fare granularity.
-  \item \textbf{Velocity.} Policymakers increasingly expect
-    near-real-time dashboards rather than quarterly reports.
-\end{enumerate}
-
-We tackle these via a \emph{CRISP-DM}–aligned workflow
-(§\ref{sec:crisp}).
-Key contributions:
-
-\begin{itemize}
-  \item an \textbf{HPC-graded ETL design} tested on 128 cores;
-  \item an \textbf{evidence-based anomaly audit}
-    covering eight timestamp and geospatial errors;
-  \item a \textbf{streaming layer} that propagates rolling Manhattan
-    metrics within \SI{600}{\milli\second};
-  \item a reusable \textbf{dataset + code bundle} with weather/POI
-    augmentation for every trip.
-\end{itemize}
-
-%=======================================================================================================================
-\section{CRISP-DM Road-Map}\label{sec:crisp}
-CRISP-DM prescribes six iterative phases.
-Table \ref{tab:crisp} maps each phase to concrete tasks (T1–T8).
-
-\begin{table}[htbp]
-  \caption{CRISP-DM \(\to\) Project task mapping}
-  \label{tab:crisp}
-  \centering
-  \begin{tabular}{p{0.23\linewidth}p{0.67\linewidth}}
-    \toprule
-    \textbf{Phase} & \textbf{Implementation highlights} \\ \midrule
-    Business and Data understanding &
-    Mobility-desert detection, competition analysis; raw TLC + NOAA + POI audit.\\
-    Data preparation &
-    T1 row-group optimisation, T2 anomaly quarantine, schema harmonisation.\\
-    Modelling / Exploration &
-    T3 storage benchmark, T4 temporal–spatial clustering,
-    T5 duration-model augmentation.\\
-    Evaluation &
-    Error reduction, feature importances,
-    streaming lag metrics.\\
-    Deployment &
-    Kafka + Faust dashboards, GitHub data releases.\\
-    \bottomrule
-  \end{tabular}
-\end{table}
+The way people get around New York City has changed a lot in the last ten years. The growth of app-based, for-hire
+vehicle services has completely changed the way people move around the city, putting traditional taxi services under
+pressure. This report looks closely at the large amount of trip record data collected by the New York City Taxi and
+Limousine Commission (TLC). By examining data from Yellow Taxis, Green Taxis, For-Hire Vehicles (FHVs), and High-Volume
+For-Hire Vehicles (HVFHVs), this report aims to find the patterns and trends that define the city's transportation.
+Through a detailed exploration of temporal and spatial data, we seek to understand the operation of
+each service, the competitive dynamics at play, and the broader shifts in consumer behavior. This report also looks at
+how real-time data processing technologies can be used to understand the continuous flow of trip data, offering a
+forward-looking view on how such systems can be used for dynamic analysis and prediction. The most important aim of
+this research is to provide a clear picture of how New York City's transportation system has developed, using facts and
+statistics to help policymakers, industry leaders, and the public make informed decisions.
 
 %=======================================================================================================================
 \section{Business Understanding}
-Urban mobility is rapidly shifting from medallion taxis toward platform
-economies.  NYC planners face two strategic questions:
 
-\subsubsection*{Q1 — Coverage \& Competition}
-Which boroughs and time-of-day slots are now dominated by Uber/Lyft
-(FHVHV) and which still rely on legacy Yellow/Green taxis?  A precise
-answer informs congestion pricing and taxi-stand allocation.
-
-\subsubsection*{Q2 — Context Sensitivity}
-How do exogenous factors—weather, school proximity, event calendars, holidays—alter demand and travel time?
-Integrating those signals is a prerequisite for predictive dispatch and equitable service design.
-
-We therefore translate each CRISP-DM phase into a concrete task
-(T1 – T8) aligned with the project brief.
+The core business objective of this analysis is to derive strategic intelligence from the vast and complex TLC
+trip record datasets. This will inform decision-making for various stakeholders in the New York City transportation
+market. For regulatory bodies like the TLC, it is crucial to understand the granular details of trip patterns, service
+distribution and market competition. This is essential for developing effective policies that ensure fair competition,
+service accessibility and public safety. This analysis is essential for existing and prospective transportation service
+providers. It offers a comprehensive market landscape assessment, identifying high-demand areas, peak service times and
+underserved markets. This information is vital for optimising fleet management, pricing strategies and service expansion
+plans. It is clear that insights into mobility patterns are vital for urban planners and city officials. These insights
+provide a foundation for infrastructure planning, traffic management and the development of integrated, multi-modal
+transportation systems. This report will provide stakeholders with a predictive understanding of the market, enabling
+more proactive and data-informed business and operational strategies.
 
 %=======================================================================================================================
 
@@ -240,7 +184,7 @@ Black Car Fund Surcharge, Sales Tax, Congestion Surcharge, Airport Fee, and Tips
 This selective retention of columns across datasets supports a focused and effective analysis of New York City's diverse
 transportation landscape.
 
-\subsection{Data ininconsistencies}
+\subsection{Data ininconsistencies (Task 1)}
 During the initial data repartitioning phase, we identified a notable anomaly: certain trip records possess pickup and
 dropoff datetimes that fall outside the expected temporal range for which the datasets were acquired.
 For instance, the Yellow Taxi dataset, which was downloaded for records starting from 2012, contains entries
@@ -265,7 +209,7 @@ will be given to pickup and dropoff datetimes, as previously noted, to remove en
 Additionally, we'll address other numerical outliers, such as unrealistically high or low fare amounts, to enhance data
 integrity for subsequent analysis.
 
-\subsection{Data Cleaning}
+\subsection{Data Cleaning (Task 2)}
 A systematic data cleaning and filtering process was applied to each dataset. This process focused on identifying and
 addressing common data inconsistencies and outlier values. Dask was used for efficient processing of the large datasets.
 
@@ -650,19 +594,70 @@ simply replacing existing taxi users. However, it appears that the market has re
 number of rides not yet returning to its pre-pandemic peak.
 
 %=======================================================================================================================
+
+\section{Modeling}
+
+We will use Apache Kafka to process data as it comes in. The reason for this choice is the huge amount of data that is
+produced every day in the New York City TLC ecosystem. It is very important to be able to deal with a lot of real-time
+data in a reliable way. This means you need a strong system that can be used in many different ways and can deal with
+problems. One example of this is Kafka. This will let us to collect, process and analyse all the data from the ride,
+making sure that our models are always up to date. This is really important for making sure that we can make accurate
+predictions and get useful information.
+
+\subsection{Apache Kafka}
+
+\subsubsection*{Producer} A special Python producer application was created to take the sorted trip data and send it to
+Kafka. This producer was set up to read the input data in batches of 100,000 records, making sure that the data was
+processed quickly. Each batch was published to a designated Kafka topic based on the order in which it was ordered.
+
+\subsubsection*{Consumer} A Python consumer application is running in parallel with the producer, and is subscribed to
+the same Kafka topic. Its primary function was to perform real-time analytical calculations on the incoming trip data
+stream. Specifically, for each trip, the system retained the window of the 1,000 most recent trips. It then calculated
+the mean and standard deviation of the trip durations, fares and trip distances for all New York City boroughs, as well
+as for ten pre-selected locations identified as points of interest.
+
+\subsubsection*{Data} The input data consisted of combined trip records from the New York City Yellow Taxi and High
+Volume For Hire datasets for the entire year 2021. Prior to ingestion, this comprehensive dataset was sorted
+chronologically by trip pickup time to simulate a realistic stream of events.
+
+\subsection{Results}
+
+\begin{figure}[htbp]
+  \label{fig:kafka-mean-trip-duration}
+  \centering
+  \includesvg[width=\linewidth]{figures/mean_trip_duration_boroughs_seaborn.svg}
+  \caption{The mean durations of trips, as produced by Kafka consumer}
+\end{figure}
+
+Trips from EWR are much longer, which is normal for airport journeys. The mean trip duration is about the same for
+Bronx, Brooklyn, Manhattan, Queens and Staten Island. We can see that the trips from Queens are usually a bit longer
+and the trips from the Bronx are usually the shortest compared to the other non-EWR boroughs. We can't draw any clear
+conclusions from the non-EWR boroughs. The changes we see suggest that any differences are not strong enough to create
+clear patterns based on these limited observations.
+
+%=======================================================================================================================
+\section{Conclusion}
+This detailed study of the New York City TLC trip record data has shown the big changes and small patterns that make up
+the city's modern transport picture. The results clearly show that high-volume for-hire vehicles are now the main choice
+for consumers, and have had a big impact on the market. This is mostly at the expense of traditional yellow taxis. The
+spatial analysis shows that Yellow and Green Taxis work in different areas, and that FHV and HVFHV services are
+everywhere, especially in places where there is a lot of demand and where people come and go.
+
+Looking at how things changed over time, we can see clear daily, weekly and seasonal patterns. These are made clearer by
+the big and long-lasting effect of the pandemic, from which the market is still recovering. The use of a system that
+processes data as it is collected using Apache Kafka showed that this is a good way to analyse large amounts of data as
+it is collected.
+
+This analysis is a very important tool for people who work in transport, like transport authorities, service providers
+and urban planners. It helps them deal with one of the world's busiest urban transportation systems and create a better,
+fairer future for New York City.
+
+%=======================================================================================================================
 \bibliographystyle{IEEEtran}
-\begin{thebibliography}{00}
+% \begin{thebibliography}{00}
 
-  \bibitem{zhang2019deep}
-  D.~Zhang \emph{et al.}, “Deep learning + urban human mobility: A survey,”
-  \emph{ACM Computing Surveys}, vol.~52, no.~5, 2019.
+%   % — add additional references here as needed —
 
-  \bibitem{yoro2019bigdata}
-  A.~Yorozu \emph{et al.}, “Big-data analytics of taxi operations in New York
-  City,” \emph{J. Advanced Transportation}, 2019.
-
-  % — add additional references here as needed —
-
-\end{thebibliography}
+% \end{thebibliography}
 
 \end{document}
